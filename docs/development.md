@@ -50,6 +50,8 @@ request:
 - **macos**: the suite natively on `macos-latest`, with `/usr/bin` and `/bin`
   first on `PATH` so the stock bash 3.2 and BSD `sed`/`awk`/`sort`/`find` are
   what's tested. This is the only coverage of macOS userland.
+- **ci**: passes only when all of the above pass. It's the single check the
+  `main` ruleset requires, so changing the matrix never touches the ruleset.
 
 `.github/workflows/integration.yml` runs a real `just php setup`, weekly and on
 demand, through `test/integration/smoke.sh` (a scratch consumer project):
