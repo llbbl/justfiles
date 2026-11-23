@@ -1,0 +1,35 @@
+name: integration
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  # Real build on a fresh runner: proves the Homebrew libs and build tools
+  # `just php setup` relies on exist on a clean Mac. Slow, so not on every push.
+  macos-php-setup:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      MISE_YES: "1"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: justfiles
+      - run: brew install just mise
+      - name: just php setup in a scratch project
+        run: |
+          project="$RUNNER_TEMP/project"
+          mkdir -p "$project/vendor"
+          ln -s "$GITHUB_WORKSPACE/justfiles" "$project/vendor/justfiles"
+          cd "$project"
+          printf "mod php 'vendor/justfiles/php/php.justfile'\n" >justfile
+          mise ls-remote php | grep -E '^8\.4\.[0-9]+$' | sort -t. -k3,3n | tail -n 1 >.php-version
+          echo "pin: $(cat .php-version)"
+          just php setup
+          just php check
+          just php version

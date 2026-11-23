@@ -33,8 +33,22 @@ arm64 image. Containers run with no network.
 
 Tests never call real package managers or the network: `test/stubs/` holds fake
 `mise`, `brew`, `curl`, `uname` and `date` that log their arguments to
-`$STUB_LOG` and answer from `test/fixtures/`. Linux containers can't exercise
-BSD userland (`sed`, `sort`, `awk` on macOS); that needs a macOS CI runner.
+`$STUB_LOG` and answer from `test/fixtures/`.
+
+## CI
+
+`.github/workflows/test.yml` runs on every push to `main` and every pull
+request:
+
+- **lint**: `just lint`.
+- **linux**: each container image against just 1.31.0 and the current release.
+- **macos**: the suite natively on `macos-latest`, with `/usr/bin` and `/bin`
+  first on `PATH` so the stock bash 3.2 and BSD `sed`/`awk`/`sort`/`find` are
+  what's tested. This is the only coverage of macOS userland.
+
+`.github/workflows/integration.yml` runs a real `just php setup` on a fresh
+macOS runner, weekly and on demand (Actions tab, "Run workflow"). It builds
+PHP, so it's too slow for every push.
 
 ## Shell rules
 
