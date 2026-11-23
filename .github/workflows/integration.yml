@@ -8,6 +8,11 @@ on:
 permissions:
   contents: read
 
+# Explicit bash adds pipefail; the implicit default shell is only `bash -e`.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   # Real build on a fresh runner: proves the Homebrew libs and build tools
   # `just php setup` relies on exist on a clean Mac. Slow, so not on every push.
@@ -16,6 +21,9 @@ jobs:
     timeout-minutes: 60
     env:
       MISE_YES: "1"
+      # mise fetches the php plugin and versions from GitHub; unauthenticated
+      # calls from shared runner IPs get rate limited.
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -29,6 +37,7 @@ jobs:
           cd "$project"
           printf "mod php 'vendor/justfiles/php/php.justfile'\n" >justfile
           mise ls-remote php | grep -E '^8\.4\.[0-9]+$' | sort -t. -k3,3n | tail -n 1 >.php-version
+          test -s .php-version
           echo "pin: $(cat .php-version)"
           just php setup
           just php check
