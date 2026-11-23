@@ -32,7 +32,7 @@ jobs:
           PHP_PIN="$(mise ls-remote php | grep -E '^8\.4\.[0-9]+$' | sort -t. -k3,3n | tail -n 1)"
           test -n "$PHP_PIN"
           echo "pin: $PHP_PIN"
-          PHP_PIN="$PHP_PIN" ./test/integration/smoke.sh
+          PIN="$PHP_PIN" ./test/integration/smoke.sh
 
   macos-brew-setup:
     runs-on: macos-latest
@@ -45,10 +45,32 @@ jobs:
     name: macos-brew-setup (${{ matrix.pin }})
     env:
       PHP_BACKEND: brew
-      PHP_PIN: ${{ matrix.pin }}
+      PIN: ${{ matrix.pin }}
     steps:
       - uses: actions/checkout@v5
       - run: brew install just
+      - run: ./test/integration/smoke.sh
+
+  # Each python backend on a fresh Mac. mise and uv download prebuilt CPython.
+  macos-python-setup:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [mise, uv, brew]
+    name: macos-python-setup (${{ matrix.backend }})
+    env:
+      MISE_YES: "1"
+      GITHUB_TOKEN: ${{ github.token }}
+      MODULE: python
+      PIN: "3.13"
+      PYTHON_BACKEND: ${{ matrix.backend }}
+    steps:
+      - uses: actions/checkout@v5
+      - run: brew install just
+      - if: matrix.backend != 'brew'
+        run: brew install ${{ matrix.backend }}
       - run: ./test/integration/smoke.sh
 
   # Real installs from each distro's package manager and the repos it adds.
@@ -58,7 +80,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [ubuntu, debian, fedora, arch, alpine]
+        service: [ubuntu, debian, fedora, arch, alpine, python-ubuntu, python-debian, python-fedora, python-arch, python-alpine]
     name: linux (${{ matrix.service }})
     steps:
       - uses: actions/checkout@v5

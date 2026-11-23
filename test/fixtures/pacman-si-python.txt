@@ -1,0 +1,4 @@
+Repository      : core
+Name            : python
+Version         : 3.14.10-1
+Description     : The Python programming language

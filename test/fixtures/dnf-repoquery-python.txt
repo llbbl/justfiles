@@ -1,0 +1,8 @@
+python3.10 3.10.22
+python3.11 3.11.18
+python3.12 3.12.16
+python3.12-devel 3.12.16
+python3.13 3.13.18
+python3.15 3.15.2
+python3.16 3.16.0~a2
+python3.9 3.9.25

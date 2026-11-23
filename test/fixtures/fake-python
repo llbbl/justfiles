@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Fake python3; its version is its install dir name (.../python/<version>/bin/python3).
+ver="$(basename "$(dirname "$(dirname "$0")")")"
+case "${1:-} ${2:-}" in
+  "--version ") echo "Python $ver" ;;
+  "-c "*platform.python_version*) echo "$ver" ;;
+  "-c import "*)
+    if [ -n "${STUB_PYTHON_MISSING:-}" ]; then
+      echo "ModuleNotFoundError: No module named '$STUB_PYTHON_MISSING'" >&2
+      exit 1
+    fi ;;
+  *) echo "fake python: unhandled: $*" >&2; exit 2 ;;
+esac
