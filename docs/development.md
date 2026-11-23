@@ -55,6 +55,8 @@ gh workflow run integration.yml --ref <branch>
 ```
 
 or use the Actions tab: integration → "Run workflow" → pick the branch.
+GitHub disables the weekly schedule after 60 days without repo activity; re-enable
+it from the Actions tab.
 
 ## Shell rules
 
