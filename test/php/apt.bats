@@ -109,3 +109,12 @@ LOG
   [ "$status" -ne 0 ]
   [[ "$output" == *"php8.5 is not installed: run  just php setup"* ]]
 }
+
+@test "setup: a sury with no release for this system is removed again" {
+  STUB_APT_UPDATE_FAIL=php run php_sh setup
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"apt-get update failed after adding packages.sury.org (it may have no release for ubuntu noble); removed it."* ]] || false
+  [ ! -e "$STUB_ROOT/etc/apt/sources.list.d/php.list" ] || false
+  assert_log "rm -f /etc/apt/sources.list.d/php.list"
+  run ! grep -q 'php8.5-cli' "$STUB_LOG"
+}

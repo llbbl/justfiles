@@ -57,7 +57,7 @@ LOG
 }
 
 @test "setup: a PPA with no release for this Ubuntu is removed again" {
-  STUB_APT_UPDATE_FAIL=1 run python_sh setup
+  STUB_APT_UPDATE_FAIL=deadsnakes run python_sh setup
   [ "$status" -ne 0 ]
   [[ "$output" == *"apt-get update failed after adding ppa:deadsnakes (it may have no release for ubuntu noble); removed it. uv installs any minor without sudo"* ]] || false
   [ ! -e "$STUB_ROOT/etc/apt/keyrings/deadsnakes.asc" ] || false

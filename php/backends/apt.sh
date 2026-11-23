@@ -30,7 +30,12 @@ _apt_add_sury() {
   rm -f "$deb"
   printf 'deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] %s/php/ %s main\n' "$SURY" "$codename" |
     run_privileged tee /etc/apt/sources.list.d/php.list >/dev/null
-  _apt_get update
+  # Left in place, the list breaks every later apt-get update. The keyring stays:
+  # apt trusts it only for lists that name it.
+  if ! _apt_get update; then
+    run_privileged rm -f /etc/apt/sources.list.d/php.list
+    die "apt-get update failed after adding packages.sury.org (it may have no release for $id $codename); removed it. mise installs any minor without sudo"
+  fi
 }
 
 backend_install() {
