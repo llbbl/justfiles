@@ -5,3 +5,8 @@ echo "gpg $*" >>"$STUB_LOG"
 [ "$*" = "--show-keys --with-colons ${3:-}" ] || { echo "fake gpg: unhandled: $*" >&2; exit 2; }
 echo "pub:-:4096:1:BA6932366A755776:1259445151:::-:::scSC::::::23::0:"
 echo "fpr:::::::::${STUB_GPG_FPR:-F23C5A6CF475977595C89F51BA6932366A755776}:"
+# STUB_GPG_EXTRA_KEY=1 appends a second key, as a tampered key file would.
+if [ -n "${STUB_GPG_EXTRA_KEY:-}" ]; then
+  echo "pub:-:4096:1:0123456789ABCDEF:1700000000:::-:::scSC::::::23::0:"
+  echo "fpr:::::::::0123456789ABCDEF0123456789ABCDEF01234567:"
+fi

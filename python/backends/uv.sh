@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 # uv backend: uv's managed CPython builds, macOS and Linux, no root. Exact patch
-# pins; an X.Y pin installs and runs that minor's newest patch.
+# pins; an X.Y pin installs the newest patch once, then keeps it.
 
 backend_available() { command -v uv >/dev/null 2>&1; }
 backend_granularity() { echo patch; }

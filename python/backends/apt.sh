@@ -46,6 +46,11 @@ _apt_add_deadsnakes() {
     rm -f "$key"
     die "the downloaded deadsnakes key has fingerprint ${fpr:-(none)}, not $DEADSNAKES_KEY; nothing was added"
   fi
+  # apt would trust every key in the file for this repo, so allow exactly one.
+  if [ "$(grep -c '^pub:' <<<"$out" || true)" -ne 1 ]; then
+    rm -f "$key"
+    die "the downloaded deadsnakes key file holds more than one key; nothing was added"
+  fi
   run_privileged install -d -m 0755 /etc/apt/keyrings
   run_privileged tee /etc/apt/keyrings/deadsnakes.asc <"$key" >/dev/null
   rm -f "$key"
@@ -54,7 +59,7 @@ _apt_add_deadsnakes() {
   # Non-LTS releases, and a new LTS before the PPA builds for it, have no Release file.
   if ! _apt_get update; then
     run_privileged rm -f /etc/apt/sources.list.d/deadsnakes.list /etc/apt/keyrings/deadsnakes.asc
-    die "ppa:deadsnakes has no release for ubuntu $codename; $UV_HINT"
+    die "apt-get update failed after adding ppa:deadsnakes (it may have no release for ubuntu $codename); removed it. $UV_HINT"
   fi
 }
 

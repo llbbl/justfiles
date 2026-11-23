@@ -41,6 +41,14 @@ LOG
   run ! grep -q 'python3.13' "$STUB_LOG"
 }
 
+@test "setup: a key file holding a second key is refused and nothing is added" {
+  STUB_GPG_EXTRA_KEY=1 run python_sh setup
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"holds more than one key; nothing was added"* ]] || false
+  [ ! -e "$STUB_ROOT/etc/apt/keyrings/deadsnakes.asc" ] || false
+  [ ! -e "$STUB_ROOT/etc/apt/sources.list.d/deadsnakes.list" ]
+}
+
 @test "setup: a failed key download says so and adds nothing" {
   STUB_CURL_FAIL=1 run python_sh setup
   [ "$status" -ne 0 ]
@@ -51,7 +59,7 @@ LOG
 @test "setup: a PPA with no release for this Ubuntu is removed again" {
   STUB_APT_UPDATE_FAIL=1 run python_sh setup
   [ "$status" -ne 0 ]
-  [[ "$output" == *"ppa:deadsnakes has no release for ubuntu noble; uv installs any minor without sudo"* ]] || false
+  [[ "$output" == *"apt-get update failed after adding ppa:deadsnakes (it may have no release for ubuntu noble); removed it. uv installs any minor without sudo"* ]] || false
   [ ! -e "$STUB_ROOT/etc/apt/keyrings/deadsnakes.asc" ] || false
   [ ! -e "$STUB_ROOT/etc/apt/sources.list.d/deadsnakes.list" ] || false
   assert_log "rm -f /etc/apt/sources.list.d/deadsnakes.list /etc/apt/keyrings/deadsnakes.asc"
