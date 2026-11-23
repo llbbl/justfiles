@@ -91,8 +91,10 @@ cmd_check() {
   else
     die "installed php $installed does not match pin $pin: run  just php setup"
   fi
-  # Plain `php` may be a mise shim, which would build a missing version.
-  onpath="$(MISE_NOT_FOUND_AUTO_INSTALL=false php -r 'echo PHP_VERSION;' 2>/dev/null || true)"
+  # Plain `php` may be a mise shim, which would build a missing version; mise has
+  # separate auto-install switches for exec, shims and not-found, so turn off all.
+  onpath="$(MISE_AUTO_INSTALL=false MISE_EXEC_AUTO_INSTALL=false MISE_NOT_FOUND_AUTO_INSTALL=false \
+    php -r 'echo PHP_VERSION;' 2>/dev/null || true)"
   version_matches "$onpath" "$(effective_pin "$pin")" ||
     warn "php on PATH is ${onpath:-not found}, not $pin: tools that run plain php (composer, IDEs) won't use the pinned one; see docs/php.md"
 }
