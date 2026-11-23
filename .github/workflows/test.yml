@@ -1,0 +1,46 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just@1.46.0
+      - run: just lint
+
+  linux:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [ubuntu, debian, fedora, arch, alpine, bash32]
+        just: ["1.31.0", "1.46.0"]
+    name: linux (${{ matrix.service }}, just ${{ matrix.just }})
+    steps:
+      - uses: actions/checkout@v5
+      - run: ./test/run.sh ${{ matrix.service }}
+        env:
+          JUST_VERSION: ${{ matrix.just }}
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: brew install bats-core just
+      # System dirs first: stock bash 3.2 and BSD sed/awk/sort/find win over
+      # Homebrew's, while bats and just are still found later on PATH.
+      - name: bats with system bash and BSD tools
+        run: |
+          export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+          bash --version | head -n 1
+          bats -r test

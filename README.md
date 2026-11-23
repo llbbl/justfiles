@@ -1,5 +1,7 @@
 # justfiles
 
+[![test](https://github.com/llbbl/justfiles/actions/workflows/test.yml/badge.svg)](https://github.com/llbbl/justfiles/actions/workflows/test.yml)
+
 Drop-in [`just`](https://github.com/casey/just) modules for language toolchains.
 Vendor this repo, add one `mod` line, and get tested recipes for setup, version
 pinning and upgrades on macOS and Linux. mise is supported, not required.
