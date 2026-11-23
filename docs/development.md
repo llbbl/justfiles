@@ -47,8 +47,14 @@ request:
   what's tested. This is the only coverage of macOS userland.
 
 `.github/workflows/integration.yml` runs a real `just php setup` on a fresh
-macOS runner, weekly and on demand (Actions tab, "Run workflow"). It builds
-PHP, so it's too slow for every push.
+macOS runner, weekly and on demand. It builds PHP, so it's too slow for every
+push. To test a branch on a fresh Mac, run it against that branch:
+
+```sh
+gh workflow run integration.yml --ref <branch>
+```
+
+or use the Actions tab: integration → "Run workflow" → pick the branch.
 
 ## Shell rules
 
