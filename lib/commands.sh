@@ -12,9 +12,16 @@ LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 STABLE_RE='^[0-9]+\.[0-9]+\.[0-9]+$'
 MINOR_OR_PATCH_RE='^[0-9]+\.[0-9]+(\.[0-9]+)?$'
+MINOR_RE='^[0-9]+\.[0-9]+$'
 
 # The project's pin, checked against mise; every command reads it here except bump's repair path.
-module_pin() { pin_get "${TOOL:?}" "$PIN_FILE"; }
+module_pin() {
+  local pin
+  # `|| return`: callers run this in $(...), where errexit does not apply.
+  pin="$(pin_get "${TOOL:?}" "$PIN_FILE")" || return
+  if declare -F validate_pin >/dev/null; then validate_pin "$pin"; fi
+  printf '%s\n' "$pin"
+}
 
 use_backend() {
   local var
@@ -49,6 +56,13 @@ exec_bin() {
 # The pin a minor-granularity backend actually honors.
 effective_pin() {
   if [ "$GRANULARITY" = minor ]; then version_minor "$1"; else echo "$1"; fi
+}
+
+# True when PIN stands for its whole minor line: always on a minor backend, and
+# for an X.Y pin on a patch backend when the module sets MINOR_PINS=1.
+tracks_minor() {
+  [ "$GRANULARITY" = minor ] && return 0
+  [ "${MINOR_PINS:-0}" = 1 ] && [[ $1 =~ $MINOR_RE ]]
 }
 
 warn_patch_pin() {
@@ -118,8 +132,9 @@ cmd_latest() {
   minor="$(version_minor "$pin")"
   versions="$(list_versions)"
   all="$(version_sort <<<"$versions" | tail -n 1)"
-  if [ "$GRANULARITY" = minor ]; then
+  if tracks_minor "$pin"; then
     [ -n "$all" ] || die "no $TOOL versions found via $BACKEND"
+    all="$(version_minor "$all")"
     printf 'pinned (%s):  %s\n' "$PIN_FILE" "$pin"
     printf 'newest available via %s: %s\n' "$BACKEND" "$all"
     if [ "$minor" = "$all" ]; then
@@ -145,7 +160,7 @@ cmd_latest() {
 # An explicit VERSION repairs a pin mismatch by writing both files; without one
 # there is no way to know which file is right, so the mismatch still stops it.
 cmd_bump() {
-  local target="${1:-}" pin="" versions="" re="$STABLE_RE" form="X.Y.Z" want
+  local target="${1:-}" pin="" versions="" re="$STABLE_RE" form="X.Y.Z" want avail
   use_backend
   if [ -n "$target" ]; then
     pin="$(pin_read "$PIN_FILE" || true)"
@@ -158,18 +173,26 @@ cmd_bump() {
       log "✓ $BACKEND tracks the newest $(version_minor "$pin").x itself; nothing to bump"
       return 0
     fi
+    # Patch backends don't all upgrade an installed X.Y on setup (uv keeps it).
+    if tracks_minor "$pin"; then
+      log "✓ an X.Y pin accepts any installed $pin.x; nothing to bump (just $TOOL bump $pin.N to pin a patch)"
+      return 0
+    fi
     versions="$(list_versions)"
     target="$(latest_in_minor "$versions" "$pin")"
     [ -n "$target" ] || die "no stable $(version_minor "$pin").x versions found via $BACKEND"
   fi
   target="${target#v}"
-  if [ "$GRANULARITY" = minor ]; then re="$MINOR_OR_PATCH_RE" form="X.Y or X.Y.Z"; fi
+  if [ "$GRANULARITY" = minor ] || [ "${MINOR_PINS:-0}" = 1 ]; then re="$MINOR_OR_PATCH_RE" form="X.Y or X.Y.Z"; fi
   # [[ =~ ]], not grep: grep checks each line of a multi-line value separately.
   [[ $target =~ $re ]] ||
     die "refusing to pin '$target': not a stable $form version"
   [ -n "$versions" ] || versions="$(list_versions)"
   want="$(effective_pin "$target")"
-  if ! grep -Fxq -- "$want" <<<"$versions"; then
+  avail="$versions"
+  # An X.Y pin is available if any of its patches is; minor backends list X.Y already.
+  [[ $want =~ $STABLE_RE ]] || avail="$(cut -d. -f1-2 <<<"$versions")"
+  if ! grep -Fxq -- "$want" <<<"$avail"; then
     [ "$GRANULARITY" = minor ] &&
       die "version $want is not available via $BACKEND; if setup hasn't added its repo yet:  echo $target > $PIN_FILE && just $TOOL setup"
     die "version $want is not available via $BACKEND"

@@ -14,22 +14,27 @@ common_setup() {
   mkdir -p "$PROJECT_DIR" "$STUB_MISE_ROOT" "$STUB_ROOT" "$STUB_BIN"
   : >"$STUB_LOG"
   PATH="$STUB_BIN:$REPO/test/stubs:$PATH"
-  unset PHP_BACKEND
+  unset PHP_BACKEND PYTHON_BACKEND
 }
 
 # Pretend mise already installed TOOL VERSION.
 mise_installed() {
   mkdir -p "$STUB_MISE_ROOT/$1/$2/bin"
-  cp "$FIXTURES/fake-$1" "$STUB_MISE_ROOT/$1/$2/bin/$1"
+  cp "$FIXTURES/fake-$1" "$STUB_MISE_ROOT/$1/$2/bin/$(bin_name "$1")"
 }
 
-# fake_php PATH VERSION: an executable at PATH that answers as php VERSION.
-fake_php() {
-  mise_installed php "$2"
-  mkdir -p "$(dirname "$1")"
-  printf '#!/bin/sh\nexec "%s" "$@"\n' "$STUB_MISE_ROOT/php/$2/bin/php" >"$1"
-  chmod +x "$1"
+# The binary a mise install of TOOL provides.
+bin_name() { if [ "$1" = python ]; then echo python3; else echo "$1"; fi; }
+
+# fake_tool TOOL PATH VERSION: an executable at PATH that answers as TOOL VERSION.
+fake_tool() {
+  mise_installed "$1" "$3"
+  mkdir -p "$(dirname "$2")"
+  printf '#!/bin/sh\nexec "%s" "$@"\n' "$STUB_MISE_ROOT/$1/$3/bin/$(bin_name "$1")" >"$2"
+  chmod +x "$2"
 }
+fake_php() { fake_tool php "$@"; }
+fake_python() { fake_tool python "$@"; }
 
 # isolated_path STUB...: a PATH holding only basic tools and the named stubs,
 # to hide a command the image really has (sudo, apt-get, a stub like brew).
@@ -44,6 +49,7 @@ isolated_path() {
 }
 
 php_sh() { bash "$REPO/php/php.sh" "$@"; }
+python_sh() { bash "$REPO/python/python.sh" "$@"; }
 
 assert_log() {
   grep -Fq -- "$1" "$STUB_LOG" || { echo "expected in stub log: $1"; cat "$STUB_LOG"; return 1; }

@@ -1,18 +1,26 @@
 #!/usr/bin/env bash
-# Fake mise. Installed tools live under $STUB_MISE_ROOT/<tool>/<version>.
+# Fake mise. Installed tools live under $STUB_MISE_ROOT/<tool>/<version>. An X.Y
+# request means the newest installed patch for `where`, the newest listed for `install`.
 set -euo pipefail
 echo "mise $*" >>"$STUB_LOG"
 [ "${STUB_MISE_FAIL:-}" != "${1:-}" ] || { echo "mise ERROR fake failure: $1" >&2; exit 1; }
+newest() { awk -v p="$1" 'index($0, p ".") == 1' | sort -t. -k1,1n -k2,2n -k3,3n | tail -n 1; }
 case "${1:-}" in
   ls-remote) cat "$FIXTURES/mise-ls-remote-$2.txt" ;;
   where)
     tool="${2%@*}" ver="${2#*@}"
-    [ -d "$STUB_MISE_ROOT/$tool/$ver" ] || { echo "mise ERROR $2 is not installed" >&2; exit 1; }
+    if [ ! -d "$STUB_MISE_ROOT/$tool/$ver" ]; then
+      ver="$(for d in "$STUB_MISE_ROOT/$tool"/*; do [ ! -d "$d" ] || echo "${d##*/}"; done | newest "$ver")"
+    fi
+    if [ -z "$ver" ] || [ ! -d "$STUB_MISE_ROOT/$tool/$ver" ]; then echo "mise ERROR $2 is not installed" >&2; exit 1; fi
     echo "$STUB_MISE_ROOT/$tool/$ver" ;;
   install)
     tool="${2%@*}" ver="${2#*@}"
+    case "$ver" in *.*.*) ;; *) ver="$(grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' "$FIXTURES/mise-ls-remote-$tool.txt" | newest "$ver")" ;; esac
     echo "mise-env PHP_CONFIGURE_OPTIONS=${PHP_CONFIGURE_OPTIONS:-}" >>"$STUB_LOG"
+    bin="$tool"
+    [ "$tool" != python ] || bin=python3
     mkdir -p "$STUB_MISE_ROOT/$tool/$ver/bin"
-    cp "$(dirname "$0")/../fixtures/fake-$tool" "$STUB_MISE_ROOT/$tool/$ver/bin/$tool" ;;
+    cp "$(dirname "$0")/../fixtures/fake-$tool" "$STUB_MISE_ROOT/$tool/$ver/bin/$bin" ;;
   *) echo "fake mise: unhandled: $*" >&2; exit 2 ;;
 esac

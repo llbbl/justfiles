@@ -2,6 +2,7 @@
 set -euo pipefail
 echo "apk $*" >>"$STUB_LOG"
 case " $* " in
+  *" search -x python3 "*) echo python3-3.12.16-r0 ;;
   *" search "*) printf 'php82-8.2.35-r0\nphp82-bcmath-8.2.35-r0\nphp83-8.3.36-r0\nphp84-8.4.27-r0\nphp84-gd-8.4.27-r0\n' ;;
   *" add "*) ;;
   *) echo "fake apk: unhandled: $*" >&2; exit 2 ;;

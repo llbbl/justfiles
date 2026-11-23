@@ -1,32 +1,39 @@
-# Real `just php setup` per distro, network on. Each pins a minor its backend can
-# install; debian pins a patch to cover the minor-backend warning path.
+# Real `just MODULE setup` per distro, network on. Each pins a minor its backend
+# can install; debian pins a php patch to cover the minor-backend warning path,
+# and python-ubuntu a minor that needs ppa:deadsnakes.
 x-smoke: &smoke
   volumes: ["../..:/repo:ro"]
 
+x-ubuntu: &ubuntu
+  <<: *smoke
+  image: justfiles-integration-ubuntu
+  build: { context: ., args: { BASE_IMAGE: "ubuntu:24.04", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
+x-debian: &debian
+  <<: *smoke
+  image: justfiles-integration-debian
+  build: { context: ., args: { BASE_IMAGE: "debian:13", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
+x-fedora: &fedora
+  <<: *smoke
+  image: justfiles-integration-fedora
+  build: { context: ., args: { BASE_IMAGE: "fedora:43", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
+x-arch: &arch
+  <<: *smoke
+  image: justfiles-integration-arch
+  platform: linux/amd64 # archlinux publishes no arm64 image
+  build: { context: ., args: { BASE_IMAGE: "archlinux:base", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
+x-alpine: &alpine
+  <<: *smoke
+  image: justfiles-integration-alpine
+  build: { context: ., args: { BASE_IMAGE: "alpine:3.22", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
+
 services:
-  ubuntu:
-    <<: *smoke
-    image: justfiles-integration-ubuntu
-    build: { context: ., args: { BASE_IMAGE: "ubuntu:24.04", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
-    environment: { PHP_PIN: "8.4" }
-  debian:
-    <<: *smoke
-    image: justfiles-integration-debian
-    build: { context: ., args: { BASE_IMAGE: "debian:13", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
-    environment: { PHP_PIN: "8.5.0" }
-  fedora:
-    <<: *smoke
-    image: justfiles-integration-fedora
-    build: { context: ., args: { BASE_IMAGE: "fedora:43", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
-    environment: { PHP_PIN: "8.5" }
-  arch:
-    <<: *smoke
-    image: justfiles-integration-arch
-    platform: linux/amd64 # archlinux publishes no arm64 image
-    build: { context: ., args: { BASE_IMAGE: "archlinux:base", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
-    environment: { PHP_PIN: "8.3" }
-  alpine:
-    <<: *smoke
-    image: justfiles-integration-alpine
-    build: { context: ., args: { BASE_IMAGE: "alpine:3.22", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
-    environment: { PHP_PIN: "8.4" }
+  ubuntu: { <<: *ubuntu, environment: { PIN: "8.4" } }
+  debian: { <<: *debian, environment: { PIN: "8.5.0" } }
+  fedora: { <<: *fedora, environment: { PIN: "8.5" } }
+  arch: { <<: *arch, environment: { PIN: "8.3" } }
+  alpine: { <<: *alpine, environment: { PIN: "8.4" } }
+  python-ubuntu: { <<: *ubuntu, environment: { MODULE: python, PIN: "3.13" } }
+  python-debian: { <<: *debian, environment: { MODULE: python, PIN: "3.13" } }
+  python-fedora: { <<: *fedora, environment: { MODULE: python, PIN: "3.12" } }
+  python-arch: { <<: *arch, environment: { MODULE: python, PIN: "3.14" } }
+  python-alpine: { <<: *alpine, environment: { MODULE: python, PIN: "3.12" } }

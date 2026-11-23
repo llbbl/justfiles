@@ -4,7 +4,10 @@ set -euo pipefail
 echo "pacman $*" >>"$STUB_LOG"
 case "${1:-}" in
   # Real pacman translates field labels; mimic a French locale unless LC_ALL=C.
-  -Si) if [ "${LC_ALL:-}" = C ]; then cat "$FIXTURES/pacman-si-php.txt"; else sed 's/^Name /Nom  /' "$FIXTURES/pacman-si-php.txt"; fi ;;
+  -Si)
+    f="$FIXTURES/pacman-si-php.txt"
+    [ "${2:-}" != python ] || f="$FIXTURES/pacman-si-python.txt"
+    if [ "${LC_ALL:-}" = C ]; then cat "$f"; else sed 's/^Name /Nom  /' "$f"; fi ;;
   -S)
     shift
     for p; do

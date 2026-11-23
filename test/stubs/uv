@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Fake uv. Installed pythons live under $STUB_ROOT/uv/<version>; a request X.Y
+# means its newest patch, and install leaves a matching installed one alone, as uv does.
+set -euo pipefail
+echo "uv $*" >>"$STUB_LOG"
+root="$STUB_ROOT/uv"
+for req; do :; done
+newest() { awk -v p="$req" '$0 == p || index($0, p ".") == 1' | sort -t. -k1,1n -k2,2n -k3,3n | tail -n 1; }
+case "${1:-} ${2:-}" in
+  "python list")
+    [ -z "${STUB_UV_FAIL:-}" ] || { echo "error: fake failure" >&2; exit 2; }
+    cat "$FIXTURES/uv-python-list.txt" ;;
+  "python install")
+    have="$(for d in "$root"/*; do [ ! -d "$d" ] || echo "${d##*/}"; done | newest)"
+    if [ -n "$have" ]; then echo "Python $req is already installed" >&2; exit 0; fi
+    ver="$(sed -n 's/^cpython-\([0-9.]*\)-.*/\1/p' "$FIXTURES/uv-python-list.txt" | newest)"
+    [ -n "$ver" ] || { echo "error: No download found for request: $req" >&2; exit 2; }
+    mkdir -p "$root/$ver/bin"
+    cp "$FIXTURES/fake-python" "$root/$ver/bin/python3" ;;
+  "python find")
+    ver="$(for d in "$root"/*; do [ ! -d "$d" ] || echo "${d##*/}"; done | newest)"
+    [ -n "$ver" ] || { echo "error: No interpreter found for Python $req in managed installations" >&2; exit 2; }
+    echo "$root/$ver/bin/python3" ;;
+  *) echo "fake uv: unhandled: $*" >&2; exit 2 ;;
+esac

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Fake install: `install -d ... DIR` creates DIR under $STUB_ROOT instead of /.
+set -euo pipefail
+echo "install $*" >>"$STUB_LOG"
+[ "${1:-}" = -d ] || { echo "fake install: unhandled: $*" >&2; exit 2; }
+for d; do :; done
+mkdir -p "$STUB_ROOT$d"

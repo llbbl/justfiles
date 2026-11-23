@@ -32,9 +32,16 @@ A module's `<lang>.sh` sets these, sources `lib/commands.sh`, and calls `main "$
   isn't the pinned version, and what runs it.
 - `verify_install PIN`: post-setup checks; dies on failure.
 
-`main` refuses to run if any of these is missing.
+`main` refuses to run if any of these is missing. Two are optional:
 
-Helpers the module's backends need beyond `lib/` (`php_packages`) live in its `.sh`.
+- `MINOR_PINS=1` (python): an `X.Y` pin is allowed on a patch backend and
+  accepts any installed patch of that minor; `latest` compares minors for it.
+- `validate_pin PIN`: dies on a pin the module can't install (python: anything
+  but CPython `X.Y`/`X.Y.Z`). `module_pin`, the one place commands read the pin,
+  calls it.
+
+Helpers the module's backends need beyond `lib/` (`php_packages`, `UV_HINT`)
+live in its `.sh`.
 
 ## Tests
 
@@ -53,7 +60,7 @@ Images: Ubuntu 24.04, Debian 13, Fedora 43, Arch, Alpine 3.22, and `bash:3.2`
 arm64 image. Containers run with no network.
 
 Tests never call real package managers or the network: `test/stubs/` holds
-fake `mise`, `brew`, `apt-get`, `apt-cache`, `dpkg`, `dnf`, `rpm`, `pacman`, `apk`,
+fake `mise`, `uv`, `brew`, `apt-get`, `apt-cache`, `dpkg`, `dnf`, `rpm`, `pacman`, `apk`,
 `sudo`, `id`, `tee`, `curl`, `uname` and `date` that log their arguments to
 `$STUB_LOG` and answer from `test/fixtures/`. System state (a sources file, an
 installed package) lives under `$STUB_ROOT`, never `/`; `OS_RELEASE` points
@@ -70,13 +77,16 @@ request:
   first on `PATH` so the stock bash 3.2 and BSD `sed`/`awk`/`sort`/`find` are
   what's tested. This is the only coverage of macOS userland.
 
-`.github/workflows/integration.yml` runs a real `just php setup`, weekly and on
-demand, through `test/integration/smoke.sh` (a scratch consumer project):
+`.github/workflows/integration.yml` runs a real `just php setup` and `just python setup`,
+weekly and on demand, through `test/integration/smoke.sh` (a scratch consumer
+project; `MODULE` and `PIN` pick what it sets up):
 
 - **macos-php-setup**: the mise backend on a fresh Mac. It builds PHP.
 - **macos-brew-setup**: `PHP_BACKEND=brew` on a fresh Mac.
+- **macos-python-setup**: python with each of mise, uv and brew on a fresh Mac.
 - **linux**: each `test/integration/compose.yaml` service, the same thing
-  `just test-integration` runs locally: a stock distro image with network on.
+  `just test-integration` runs locally: a stock distro image with network on,
+  one service per distro for php and one (`python-<distro>`) for python.
 
 Too slow for every push. To test a branch, run it against that branch:
 

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Fake rm: paths under /etc/apt are removed under $STUB_ROOT instead; anything
+# else goes to the real rm, since scripts also rm their temp files.
+args=()
+for a; do
+  case "$a" in /etc/apt/*) a="$STUB_ROOT$a" logged="rm $*" ;; esac
+  args+=("$a")
+done
+[ -z "${logged:-}" ] || echo "$logged" >>"$STUB_LOG"
+for r in /bin/rm /usr/bin/rm; do [ -x "$r" ] && exec "$r" "${args[@]}"; done
+exit 127

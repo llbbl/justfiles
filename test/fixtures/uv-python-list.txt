@@ -1,0 +1,11 @@
+cpython-3.16.0a2-linux-x86_64-gnu                 <download available>
+cpython-3.16.0a2+freethreaded-linux-x86_64-gnu    <download available>
+cpython-3.15.2-linux-x86_64-gnu                   <download available>
+cpython-3.15.2+freethreaded-linux-x86_64-gnu      <download available>
+cpython-3.14.10-linux-x86_64-gnu                  <download available>
+cpython-3.13.18-linux-x86_64-gnu                  <download available>
+cpython-3.13.18+freethreaded-linux-x86_64-gnu     <download available>
+cpython-3.13.9-linux-x86_64-gnu                   <download available>
+cpython-3.12.12-linux-x86_64-gnu                  <download available>
+pypy-3.11.13-linux-x86_64-gnu                     <download available>
+graalpy-3.12.0-linux-x86_64-gnu                   <download available>
