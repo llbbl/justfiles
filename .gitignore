@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/
+*.swp
+
+# mise local overrides
+.mise.local.toml
+mise.local.toml
+
+# AI / agent tooling + context files
+.claude/
+.agent/
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+.cursor/
+.aider*
+.windsurf/
+
+# Scratch
+_/

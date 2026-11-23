@@ -1,0 +1,31 @@
+# One service per supported base. JUST_VERSION picks the just release under test.
+x-test: &test
+  volumes: ["..:/repo:ro"]
+  network_mode: none
+
+services:
+  ubuntu:
+    <<: *test
+    image: justfiles-test-ubuntu:${JUST_VERSION:-1.46.0}
+    build: { context: ., args: { BASE_IMAGE: "ubuntu:24.04", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
+  debian:
+    <<: *test
+    image: justfiles-test-debian:${JUST_VERSION:-1.46.0}
+    build: { context: ., args: { BASE_IMAGE: "debian:13", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
+  fedora:
+    <<: *test
+    image: justfiles-test-fedora:${JUST_VERSION:-1.46.0}
+    build: { context: ., args: { BASE_IMAGE: "fedora:43", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
+  arch:
+    <<: *test
+    image: justfiles-test-arch:${JUST_VERSION:-1.46.0}
+    platform: linux/amd64 # archlinux publishes no arm64 image
+    build: { context: ., args: { BASE_IMAGE: "archlinux:base", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
+  alpine:
+    <<: *test
+    image: justfiles-test-alpine:${JUST_VERSION:-1.46.0}
+    build: { context: ., args: { BASE_IMAGE: "alpine:3.22", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
+  bash32:
+    <<: *test
+    image: justfiles-test-bash32:${JUST_VERSION:-1.46.0}
+    build: { context: ., args: { BASE_IMAGE: "bash:3.2", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }

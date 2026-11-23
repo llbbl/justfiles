@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Fake curl: serves fixtures by URL, never touches the network.
+set -euo pipefail
+echo "curl $*" >>"$STUB_LOG"
+for url; do :; done
+case "$url" in
+  https://endoflife.date/api/php.json) cat "$FIXTURES/eol-php.json" ;;
+  *) echo "fake curl: no fixture for $url" >&2; exit 22 ;;
+esac

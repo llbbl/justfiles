@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Fake date: pins today for `date +%F` so EOL fixtures stay valid.
+if [ "${1:-}" = "+%F" ]; then echo "${STUB_TODAY:-2026-11-23}"; exit 0; fi
+for d in /bin/date /usr/bin/date; do [ -x "$d" ] && exec "$d" "$@"; done
+exit 127

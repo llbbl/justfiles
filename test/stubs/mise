@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Fake mise. Installed tools live under $STUB_MISE_ROOT/<tool>/<version>.
+set -euo pipefail
+echo "mise $*" >>"$STUB_LOG"
+[ "${STUB_MISE_FAIL:-}" != "${1:-}" ] || { echo "mise ERROR fake failure: $1" >&2; exit 1; }
+case "${1:-}" in
+  ls-remote) cat "$FIXTURES/mise-ls-remote-$2.txt" ;;
+  where)
+    tool="${2%@*}" ver="${2#*@}"
+    [ -d "$STUB_MISE_ROOT/$tool/$ver" ] || { echo "mise ERROR $2 is not installed" >&2; exit 1; }
+    echo "$STUB_MISE_ROOT/$tool/$ver" ;;
+  install)
+    tool="${2%@*}" ver="${2#*@}"
+    echo "mise-env PHP_CONFIGURE_OPTIONS=${PHP_CONFIGURE_OPTIONS:-}" >>"$STUB_LOG"
+    mkdir -p "$STUB_MISE_ROOT/$tool/$ver/bin"
+    cp "$(dirname "$0")/../fixtures/fake-$tool" "$STUB_MISE_ROOT/$tool/$ver/bin/$tool" ;;
+  *) echo "fake mise: unhandled: $*" >&2; exit 2 ;;
+esac

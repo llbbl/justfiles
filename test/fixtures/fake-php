@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Fake php binary; its version is its install dir name (.../php/<version>/bin/php).
+ver="$(basename "$(dirname "$(dirname "$0")")")"
+case "${1:-}" in
+  -v | --version) echo "PHP $ver (cli) (fake)" ;;
+  -m) printf '%b\n' "${STUB_PHP_MODULES:-Core\nopenssl\nzip}" ;;
+  -r) echo "$ver" ;;
+  *) echo "fake php: unhandled: $*" >&2; exit 2 ;;
+esac
