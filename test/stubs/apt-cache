@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
-# Fake apt-cache: sury and deadsnakes appear once their sources files exist under $STUB_ROOT.
+# Fake apt-cache: sury, deadsnakes and NodeSource appear once their sources files exist under $STUB_ROOT.
 set -euo pipefail
 echo "apt-cache $*" >>"$STUB_LOG"
-sury="" deadsnakes=""
+sury="" deadsnakes="" nodesource=""
 if [ -f "$STUB_ROOT/etc/apt/sources.list.d/php.list" ]; then sury=1; fi
 if [ -f "$STUB_ROOT/etc/apt/sources.list.d/deadsnakes.list" ]; then deadsnakes=1; fi
+# The major NodeSource serves, from its node_N.x URL.
+if [ -f "$STUB_ROOT/etc/apt/sources.list.d/nodesource.list" ]; then
+  nodesource="$(sed -n 's|.*/node_\([0-9]*\)\.x .*|\1|p' "$STUB_ROOT/etc/apt/sources.list.d/nodesource.list")"
+fi
 case "${1:-}" in
   policy)
     echo " 500 http://deb.debian.org/debian trixie/main arm64 Packages"
     [ -z "$sury" ] || echo " 500 https://packages.sury.org/php trixie/main arm64 Packages"
-    [ -z "$deadsnakes" ] || echo " 500 https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu noble/main arm64 Packages" ;;
+    [ -z "$deadsnakes" ] || echo " 500 https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu noble/main arm64 Packages"
+    [ -z "$nodesource" ] || echo " 500 https://deb.nodesource.com/node_$nodesource.x nodistro/main arm64 Packages" ;;
   search)
     case "$*" in
       *python*)
@@ -21,6 +26,11 @@ case "${1:-}" in
     esac ;;
   madison)
     shift
+    if [ "$*" = nodejs ]; then
+      echo "    nodejs | 20.19.2+dfsg-1+deb13u3 | http://deb.debian.org/debian trixie/main arm64 Packages"
+      [ -z "$nodesource" ] || echo "    nodejs | $nodesource.4.1-1nodesource1 | https://deb.nodesource.com/node_$nodesource.x nodistro/main arm64 Packages"
+      exit 0
+    fi
     for p; do grep "^ *$p |" "$FIXTURES/apt-madison-python.txt"; done ;;
   *) echo "fake apt-cache: unhandled: $*" >&2; exit 2 ;;
 esac

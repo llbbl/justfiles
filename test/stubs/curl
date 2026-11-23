@@ -7,6 +7,8 @@ for url; do :; done
 case "$url" in
   https://endoflife.date/api/php.json) cat "$FIXTURES/eol-php.json" ;;
   https://endoflife.date/api/python.json) cat "$FIXTURES/eol-python.json" ;;
+  https://endoflife.date/api/nodejs.json) cat "$FIXTURES/eol-nodejs.json" ;;
+  https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key) echo "fake nodesource key" ;;
   https://keyserver.ubuntu.com/*) echo "fake deadsnakes key" ;;
   https://packages.sury.org/debsuryorg-archive-keyring.deb) echo "fake keyring deb" ;;
   *) echo "fake curl: no fixture for $url" >&2; exit 22 ;;

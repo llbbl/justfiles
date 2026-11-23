@@ -4,7 +4,8 @@
 
 ```
 lib/              shared helpers: common.sh, pin.sh (pins + mise.toml), backend.sh,
-                  commands.sh (check, setup, version, latest, bump, floor, backend)
+                  commands.sh (check, setup, version, latest, bump, floor, backend),
+                  apt.sh (signed third-party apt repos)
 <lang>/           <lang>.justfile (one-line recipes), <lang>.sh (module config +
                   hooks), backends/<name>.sh
 test/             bats suites, fake commands (stubs/), fixtures/, Dockerfile, compose.yaml,
@@ -32,10 +33,16 @@ A module's `<lang>.sh` sets these, sources `lib/commands.sh`, and calls `main "$
   isn't the pinned version, and what runs it.
 - `verify_install PIN`: post-setup checks; dies on failure.
 
-`main` refuses to run if any of these is missing. Two are optional:
+`main` refuses to run if any of these is missing. These are optional:
 
-- `MINOR_PINS=1` (python): an `X.Y` pin is allowed on a patch backend and
-  accepts any installed patch of that minor; `latest` compares minors for it.
+- `RELEASE_LINE`: `minor` (default; php 8.5, python 3.13) or `major` (node 22).
+  `latest` and `bump` work within the pin's line, and coarse backends
+  (`backend_granularity` of `minor` or `major`) install its newest release.
+- `LINE_PINS=1` (python, node): a bare line pin (`3.13`, `22`) is allowed on a
+  patch backend and accepts any installed release of that line; `latest`
+  compares lines for it.
+- `FLOOR_LTS=1` (node): `floor` picks the oldest LTS cycle instead of the
+  oldest cycle in the pin's major.
 - `validate_pin PIN`: dies on a pin the module can't install (python: anything
   but CPython `X.Y`/`X.Y.Z`). `module_pin`, the one place commands read the pin,
   calls it.

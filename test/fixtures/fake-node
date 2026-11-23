@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Fake node; its version is its install dir name (.../node/<version>/bin/node).
+ver="$(basename "$(dirname "$(dirname "$0")")")"
+case "${1:-} ${2:-}" in
+  "--version ") echo "v$ver" ;;
+  "-p process.versions.node") echo "$ver" ;;
+  "-p process.execPath") echo "$0" ;;
+  # verify_install's npm check; STUB_NODE_NO_NPM makes it fail.
+  "-e "*) [ -z "${STUB_NODE_NO_NPM:-}" ] ;;
+  *) echo "fake node: unhandled: $*" >&2; exit 2 ;;
+esac

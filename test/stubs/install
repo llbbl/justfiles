@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
-# Fake install: `install -d ... DIR` creates DIR under $STUB_ROOT instead of /.
+# Fake install: `install -d ... DIR` and `install -m MODE SRC DEST` work under
+# $STUB_ROOT instead of /; a copied file's lines are logged as `install< ...`.
 set -euo pipefail
 echo "install $*" >>"$STUB_LOG"
-[ "${1:-}" = -d ] || { echo "fake install: unhandled: $*" >&2; exit 2; }
 for d; do :; done
-mkdir -p "$STUB_ROOT$d"
+case "${1:-}" in
+  -d) mkdir -p "$STUB_ROOT$d" ;;
+  -m)
+    mkdir -p "$STUB_ROOT$(dirname "$d")"
+    cp "$3" "$STUB_ROOT$d"
+    sed 's/^/install< /' "$STUB_ROOT$d" >>"$STUB_LOG" ;;
+  *) echo "fake install: unhandled: $*" >&2; exit 2 ;;
+esac

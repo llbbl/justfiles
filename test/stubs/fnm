@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Fake fnm. Installs live under $STUB_ROOT/fnm/<version>; a bare major means its
+# newest listed release (install) or installed one (exec).
+set -euo pipefail
+echo "fnm $*" >>"$STUB_LOG"
+root="$STUB_ROOT/fnm/node"
+newest() { awk -v p="$1" '$0 == p || index($0, p ".") == 1' | sort -t. -k1,1n -k2,2n -k3,3n | tail -n 1; }
+stable() { grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' "$FIXTURES/mise-ls-remote-node.txt"; }
+case "${1:-}" in
+  list-remote) stable | awk '{ print "v" $0 ($0 ~ /^22\./ ? " (Jod)" : "") }' ;;
+  install)
+    ver="$(stable | newest "$2")"
+    [ -n "$ver" ] || { echo "error: Can't find a Node version that matches $2 in remote" >&2; exit 1; }
+    mkdir -p "$root/$ver/bin"
+    cp "$FIXTURES/fake-node" "$root/$ver/bin/node" ;;
+  exec)
+    req="${2#--using=}"
+    shift 3
+    ver="$(for d in "$root"/*; do [ ! -d "$d" ] || echo "${d##*/}"; done | newest "$req")"
+    [ -n "$ver" ] || { echo "error: Can't find an installed Node version matching $req" >&2; exit 1; }
+    exec "$root/$ver/bin/node" "$@" ;;
+  *) echo "fake fnm: unhandled: $*" >&2; exit 2 ;;
+esac

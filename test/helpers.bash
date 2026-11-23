@@ -14,7 +14,9 @@ common_setup() {
   mkdir -p "$PROJECT_DIR" "$STUB_MISE_ROOT" "$STUB_ROOT" "$STUB_BIN"
   : >"$STUB_LOG"
   PATH="$STUB_BIN:$REPO/test/stubs:$PATH"
-  unset PHP_BACKEND PYTHON_BACKEND
+  unset PHP_BACKEND PYTHON_BACKEND NODE_BACKEND
+  # Hide the host's nvm (the macOS CI runner has one) and apk world; tests that want them write here.
+  export NVM_DIR="$BATS_TEST_TMPDIR/nvm" HOMEBREW_PREFIX="$BATS_TEST_TMPDIR/homebrew" APK_WORLD="$BATS_TEST_TMPDIR/apk-world"
 }
 
 # Pretend mise already installed TOOL VERSION.
@@ -35,6 +37,7 @@ fake_tool() {
 }
 fake_php() { fake_tool php "$@"; }
 fake_python() { fake_tool python "$@"; }
+fake_node() { fake_tool node "$@"; }
 
 # isolated_path STUB...: a PATH holding only basic tools and the named stubs,
 # to hide a command the image really has (sudo, apt-get, a stub like brew).
@@ -50,6 +53,7 @@ isolated_path() {
 
 php_sh() { bash "$REPO/php/php.sh" "$@"; }
 python_sh() { bash "$REPO/python/python.sh" "$@"; }
+node_sh() { bash "$REPO/node/node.sh" "$@"; }
 
 assert_log() {
   grep -Fq -- "$1" "$STUB_LOG" || { echo "expected in stub log: $1"; cat "$STUB_LOG"; return 1; }

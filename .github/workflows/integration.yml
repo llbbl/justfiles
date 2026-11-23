@@ -73,6 +73,28 @@ jobs:
         run: brew install ${{ matrix.backend }}
       - run: ./test/integration/smoke.sh
 
+  # Each node backend on a fresh Mac. The runner's preinstalled node stays on PATH.
+  macos-node-setup:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [mise, nvm, fnm, brew]
+    name: macos-node-setup (${{ matrix.backend }})
+    env:
+      MISE_YES: "1"
+      GITHUB_TOKEN: ${{ github.token }}
+      MODULE: node
+      PIN: "24"
+      NODE_BACKEND: ${{ matrix.backend }}
+    steps:
+      - uses: actions/checkout@v5
+      - run: brew install just
+      - if: matrix.backend != 'brew'
+        run: brew install ${{ matrix.backend }}
+      - run: ./test/integration/smoke.sh
+
   # Real installs from each distro's package manager and the repos it adds.
   linux:
     runs-on: ubuntu-24.04
@@ -80,7 +102,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [ubuntu, debian, fedora, arch, alpine, python-ubuntu, python-debian, python-fedora, python-arch, python-alpine]
+        service: [ubuntu, debian, fedora, arch, alpine, python-ubuntu, python-debian, python-fedora, python-arch, python-alpine,
+                  node-ubuntu, node-debian, node-fedora, node-arch, node-alpine]
     name: linux (${{ matrix.service }})
     steps:
       - uses: actions/checkout@v5
