@@ -20,15 +20,15 @@ apt-get install -y --no-install-recommends ca-certificates curl gnupg
 curl -fsSL https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xF23C5A6CF475977595C89F51BA6932366A755776
 gpg --show-keys --with-colons <key>
 install -d -m 0755 /etc/apt/keyrings
-tee /etc/apt/keyrings/deadsnakes.asc
-tee< fake deadsnakes key
+install -m 0644 <key> /etc/apt/keyrings/deadsnakes.asc
+install< fake deadsnakes key
 tee /etc/apt/sources.list.d/deadsnakes.list
 tee< deb [signed-by=/etc/apt/keyrings/deadsnakes.asc] https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu noble main
 apt-get update
 apt-get install -y --no-install-recommends python3.13 python3.13-venv
 LOG
 )"
-  [ "$(grep -v '^apt-cache' "$STUB_LOG" | sed 's|^gpg --show-keys --with-colons .*|gpg --show-keys --with-colons <key>|')" = "$expected" ] || false
+  [ "$(grep -v '^apt-cache' "$STUB_LOG" | sed -e 's|^gpg --show-keys --with-colons .*|gpg --show-keys --with-colons <key>|' -e 's|^install -m 0644 .* /etc|install -m 0644 <key> /etc|')" = "$expected" ] || false
   [[ "$output" == *"✓ ssl, sqlite3, venv and ensurepip present"* ]]
 }
 

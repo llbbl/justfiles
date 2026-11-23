@@ -12,7 +12,6 @@ LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 STABLE_RE='^[0-9]+\.[0-9]+\.[0-9]+$'
 MINOR_OR_PATCH_RE='^[0-9]+\.[0-9]+(\.[0-9]+)?$'
-MINOR_RE='^[0-9]+\.[0-9]+$'
 
 # The project's pin, checked against mise; every command reads it here except bump's repair path.
 module_pin() {
@@ -53,29 +52,39 @@ exec_bin() {
   "$@"
 }
 
-# The pin a minor-granularity backend actually honors.
+# The release line VERSION belongs to: 8.5 for php 8.5.7, 22 for node 22.11.0.
+line_of() { printf '%s\n' "$1" | cut -d. -f"1-$LINE_FIELDS"; }
+
+# The part of a pin a minor- or major-granularity backend actually honors.
 effective_pin() {
-  if [ "$GRANULARITY" = minor ]; then version_minor "$1"; else echo "$1"; fi
+  case "$GRANULARITY" in
+    minor) version_minor "$1" ;;
+    major) version_major "$1" ;;
+    *) echo "$1" ;;
+  esac
 }
 
-# True when PIN stands for its whole minor line: always on a minor backend, and
-# for an X.Y pin on a patch backend when the module sets MINOR_PINS=1.
-tracks_minor() {
-  [ "$GRANULARITY" = minor ] && return 0
-  [ "${MINOR_PINS:-0}" = 1 ] && [[ $1 =~ $MINOR_RE ]]
+# What a coarse backend can't pin, for warnings.
+unpinnable() { if [ "$GRANULARITY" = major ]; then echo "minors or patches"; else echo patches; fi; }
+
+# True when PIN stands for its whole release line: always on a coarse backend,
+# and for a bare line pin (X.Y, or X for node) when the module sets LINE_PINS=1.
+tracks_line() {
+  [ "$GRANULARITY" != patch ] && return 0
+  [ "${LINE_PINS:-0}" = 1 ] && [[ $1 =~ $LINE_RE ]]
 }
 
 warn_patch_pin() {
   if [ "$(effective_pin "$1")" != "$1" ] && [ "$1" != "$2" ]; then
-    warn "$BACKEND can't pin patches; installed $2 for pin $1"
+    warn "$BACKEND can't pin $(unpinnable); installed $2 for pin $1"
   fi
 }
 
-# latest_in_minor VERSIONS PIN: newest of VERSIONS in PIN's minor line.
-latest_in_minor() {
-  local minor
-  minor="$(version_minor "$2")"
-  { grep -E "^${minor//./\\.}\." <<<"$1" || true; } | version_sort | tail -n 1
+# latest_in_line VERSIONS PIN: newest of VERSIONS in PIN's release line.
+latest_in_line() {
+  local line
+  line="$(line_of "$2")"
+  { grep -E "^${line//./\\.}\." <<<"$1" || true; } | version_sort | tail -n 1
 }
 
 cmd_backend() {
@@ -114,6 +123,8 @@ cmd_setup() {
   log "── verifying build ──"
   backend_exec "$pin" --version
   installed="$(backend_exec "$pin" "${TOOL_VERSION_ARGS[@]}")"
+  # A package manager can report success and leave another version in place.
+  version_matches "$installed" "$(effective_pin "$pin")" || die "setup left $TOOL $installed installed, not $pin"
   warn_patch_pin "$pin" "$installed"
   verify_install "$pin"
 }
@@ -126,37 +137,37 @@ cmd_version() {
 }
 
 cmd_latest() {
-  local pin minor versions line all
+  local pin line versions newest all
   pin="$(module_pin)"
   use_backend
-  minor="$(version_minor "$pin")"
+  line="$(line_of "$pin")"
   versions="$(list_versions)"
   all="$(version_sort <<<"$versions" | tail -n 1)"
-  if tracks_minor "$pin"; then
+  if tracks_line "$pin"; then
     [ -n "$all" ] || die "no $TOOL versions found via $BACKEND"
-    all="$(version_minor "$all")"
+    all="$(line_of "$all")"
     printf 'pinned (%s):  %s\n' "$PIN_FILE" "$pin"
     printf 'newest available via %s: %s\n' "$BACKEND" "$all"
-    if [ "$minor" = "$all" ]; then
-      printf '\n✓ pin is the newest minor %s has\n' "$BACKEND"
+    if [ "$line" = "$all" ]; then
+      printf '\n✓ pin is the newest %s %s has\n' "$RELEASE_LINE" "$BACKEND"
     else
-      printf '\n→ newer minor: %s, run: just %s bump %s\n' "$all" "$TOOL" "$all"
+      printf '\n→ newer %s: %s, run: just %s bump %s\n' "$RELEASE_LINE" "$all" "$TOOL" "$all"
     fi
     return 0
   fi
-  line="$(latest_in_minor "$versions" "$pin")"
-  [ -n "$line" ] || die "no stable $minor.x versions found via $BACKEND"
+  newest="$(latest_in_line "$versions" "$pin")"
+  [ -n "$newest" ] || die "no stable $line.x versions found via $BACKEND"
   printf 'pinned (%s):  %s\n' "$PIN_FILE" "$pin"
-  printf 'latest stable %s.x:     %s\n' "$minor" "$line"
+  printf 'latest stable %s.x:     %s\n' "$line" "$newest"
   printf 'latest stable overall:  %s\n' "$all"
-  if [ "$pin" = "$line" ]; then
-    printf '\n✓ pin is the latest %s.x stable\n' "$minor"
+  if [ "$pin" = "$newest" ]; then
+    printf '\n✓ pin is the latest %s.x stable\n' "$line"
   else
-    printf '\n→ newer %s.x stable: %s, run: just %s bump\n' "$minor" "$line" "$TOOL"
+    printf '\n→ newer %s.x stable: %s, run: just %s bump\n' "$line" "$newest" "$TOOL"
   fi
 }
 
-# bump [VERSION]: pin VERSION, or the newest patch in the current minor line.
+# bump [VERSION]: pin VERSION, or the newest release in the current line.
 # An explicit VERSION repairs a pin mismatch by writing both files; without one
 # there is no way to know which file is right, so the mismatch still stops it.
 cmd_bump() {
@@ -169,35 +180,37 @@ cmd_bump() {
   fi
   if [ -z "$target" ]; then
     [ -n "$pin" ] || die "no $PIN_FILE yet: run  just $TOOL bump <version>"
-    if [ "$GRANULARITY" = minor ]; then
-      log "✓ $BACKEND tracks the newest $(version_minor "$pin").x itself; nothing to bump"
+    if [ "$GRANULARITY" != patch ]; then
+      log "✓ $BACKEND tracks the newest $(line_of "$pin").x itself; nothing to bump"
       return 0
     fi
     # Patch backends don't all upgrade an installed X.Y on setup (uv keeps it).
-    if tracks_minor "$pin"; then
-      log "✓ an X.Y pin accepts any installed $pin.x; nothing to bump (just $TOOL bump $pin.N to pin a patch)"
+    if tracks_line "$pin"; then
+      local n=.N
+      [ "$LINE_FIELDS" = 2 ] || n=.N.N
+      log "✓ an $LINE_FORM pin accepts any installed $pin.x; nothing to bump (just $TOOL bump $pin$n to pin a patch)"
       return 0
     fi
     versions="$(list_versions)"
-    target="$(latest_in_minor "$versions" "$pin")"
-    [ -n "$target" ] || die "no stable $(version_minor "$pin").x versions found via $BACKEND"
+    target="$(latest_in_line "$versions" "$pin")"
+    [ -n "$target" ] || die "no stable $(line_of "$pin").x versions found via $BACKEND"
   fi
   target="${target#v}"
-  if [ "$GRANULARITY" = minor ] || [ "${MINOR_PINS:-0}" = 1 ]; then re="$MINOR_OR_PATCH_RE" form="X.Y or X.Y.Z"; fi
+  if [ "$GRANULARITY" != patch ] || [ "${LINE_PINS:-0}" = 1 ]; then re="$LINE_OR_PATCH_RE" form="$LINE_FORM or X.Y.Z"; fi
   # [[ =~ ]], not grep: grep checks each line of a multi-line value separately.
   [[ $target =~ $re ]] ||
     die "refusing to pin '$target': not a stable $form version"
   [ -n "$versions" ] || versions="$(list_versions)"
   want="$(effective_pin "$target")"
   avail="$versions"
-  # An X.Y pin is available if any of its patches is; minor backends list X.Y already.
-  [[ $want =~ $STABLE_RE ]] || avail="$(cut -d. -f1-2 <<<"$versions")"
+  # A line pin is available if any of its releases is; coarse backends list lines already.
+  [[ $want =~ $STABLE_RE ]] || avail="$(cut -d. -f"1-$LINE_FIELDS" <<<"$versions")"
   if ! grep -Fxq -- "$want" <<<"$avail"; then
-    [ "$GRANULARITY" = minor ] &&
+    [ "$GRANULARITY" != patch ] &&
       die "version $want is not available via $BACKEND; if setup hasn't added its repo yet:  echo $target > $PIN_FILE && just $TOOL setup"
     die "version $want is not available via $BACKEND"
   fi
-  [ "$want" = "$target" ] || warn "$BACKEND can't pin patches; setup installs the newest $want.x"
+  [ "$want" = "$target" ] || warn "$BACKEND can't pin $(unpinnable); setup installs the newest $want.x"
   if [ "$target" = "$pin" ] && { ! mise_pin "$TOOL" || [ "$MISE_PIN" = "$target" ]; }; then
     log "✓ already pinned to $pin"
     return 0
@@ -207,10 +220,10 @@ cmd_bump() {
   log "next: just $TOOL setup"
 }
 
-# Oldest endoflife.date cycle in the pinned major whose FLOOR_FIELD date is
-# still ahead: support = in active support, eol = not yet end of life.
+# Oldest endoflife.date cycle in the pinned major (or, with FLOOR_LTS=1, any LTS
+# cycle) whose FLOOR_FIELD date is still ahead: support = in active support, eol = not yet end of life.
 cmd_floor() {
-  local pin major row minor patch kind none label ends
+  local pin major row cycle patch kind none label ends scope filter
   case "$FLOOR_FIELD" in
     support) kind=active-support none="an actively supported" label="active support until" ;;
     eol) kind=supported none="a supported" label="supported until" ;;
@@ -219,16 +232,20 @@ cmd_floor() {
   require_cmd jq "brew install jq / apt install jq"
   pin="$(module_pin)"
   major="$(version_major "$pin")"
+  # shellcheck disable=SC2016 # $major is a jq variable
+  scope="$major.x" filter='select(.cycle | startswith($major + "."))'
+  # Node's cycles are bare majors, and its odd ones never get LTS (lts is false).
+  if [ "${FLOOR_LTS:-0}" = 1 ]; then scope=LTS filter='select(.lts | type == "string")'; fi
   row="$(http_get "$EOL_URL" | jq -r --arg today "$(date +%F)" --arg major "$major" --arg f "$FLOOR_FIELD" '
     map(select((.[$f] | type == "string") and (.[$f] > $today)))
-    | map(select(.cycle | startswith($major + ".")))
+    | map('"$filter"')
     | sort_by(.cycle | split(".") | map(tonumber))
     | (.[0] // empty) | "\(.cycle)\t\(.[$f])\t\(.latest)"')"
-  [ -n "$row" ] || die "could not find $none $major.x branch"
-  IFS=$'\t' read -r minor ends patch <<<"$row"
+  [ -n "$row" ] || die "could not find $none $scope branch"
+  IFS=$'\t' read -r cycle ends patch <<<"$row"
   # Fixed width keeps the values aligned whichever wording FLOOR_FIELD picks.
   printf '%-26s   %s\n' "current pin:" "$pin"
-  printf '%-26s   %s   (%s %s)\n' "oldest $kind $major.x:" "$minor" "$label" "$ends"
+  printf '%-26s   %s   (%s %s)\n' "oldest $kind $scope:" "$cycle" "$label" "$ends"
   printf '%-26s   %s\n' "latest stable patch:" "$patch"
   printf '\napply (%s floor): just %s bump %s\n' "$kind" "$TOOL" "$patch"
 }
@@ -238,6 +255,11 @@ main() {
   : "${TOOL:?}" "${PIN_FILE:?}" "${MODULE_DIR:?}" "${EOL_URL:?}" "${FLOOR_FIELD:?}" "${PATH_TOOL:?}" "${PATH_TOOL_USERS:?}"
   : "${BACKEND_ORDER_MACOS[0]:?}" "${BACKEND_ORDER_LINUX[0]:?}" "${TOOL_VERSION_ARGS[0]:?}"
   declare -F verify_install >/dev/null || die "$TOOL.sh does not define verify_install"
+  case "${RELEASE_LINE:=minor}" in
+    minor) LINE_FIELDS=2 LINE_FORM=X.Y LINE_RE='^[0-9]+\.[0-9]+$' LINE_OR_PATCH_RE="$MINOR_OR_PATCH_RE" ;;
+    major) LINE_FIELDS=1 LINE_FORM=X LINE_RE='^[0-9]+$' LINE_OR_PATCH_RE='^[0-9]+(\.[0-9]+\.[0-9]+)?$' ;;
+    *) die "unknown RELEASE_LINE: $RELEASE_LINE" ;;
+  esac
   [ -n "${PROJECT_DIR:-}" ] || die "PROJECT_DIR is not set (run via just $TOOL ...)"
   cd "$PROJECT_DIR" || exit 1
   local cmd="${1:-}"

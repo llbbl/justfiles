@@ -14,7 +14,7 @@ TOOL_VERSION_ARGS=(-c 'import platform; print(platform.python_version())')
 PATH_TOOL=python3
 PATH_TOOL_USERS="pip, venvs, IDEs"
 # uv writes X.Y to .python-version by default, and mise and uv resolve it to the newest patch.
-MINOR_PINS=1
+LINE_PINS=1
 
 # shellcheck source=lib/commands.sh
 . "$MODULE_DIR/../lib/commands.sh"
