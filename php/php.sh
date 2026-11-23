@@ -123,7 +123,7 @@ cmd_bump() {
     return 0
   fi
   pin_write php "$PIN_FILE" "$target"
-  log "$PIN_FILE: php ${pin:-(none)} → $target"
+  [ "$pin" = "$target" ] || log "$PIN_FILE: php ${pin:-(none)} → $target"
   log "next: just php setup"
 }
 
