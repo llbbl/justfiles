@@ -51,7 +51,7 @@ pin_get() {
     if mise_pin "$tool"; then
       die "no $pinfile in $PWD ($MISE_PIN_FILE pins $tool $MISE_PIN): run  echo $MISE_PIN > $pinfile"
     fi
-    die "no $pinfile in $PWD: run  just $tool bump <version>"
+    die "no $pinfile in $PWD: run  just $tool bump <version>  (or  echo <version> > $pinfile)"
   fi
   if mise_pin "$tool" && [ "$MISE_PIN" != "$pin" ]; then
     die "pin mismatch: $pinfile says $tool $pin, $MISE_PIN_FILE says $MISE_PIN. Change one so they agree."

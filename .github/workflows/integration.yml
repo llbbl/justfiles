@@ -26,19 +26,42 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v5
-        with:
-          path: justfiles
       - run: brew install just mise
       - name: just php setup in a scratch project
         run: |
-          project="$RUNNER_TEMP/project"
-          mkdir -p "$project/vendor"
-          ln -s "$GITHUB_WORKSPACE/justfiles" "$project/vendor/justfiles"
-          cd "$project"
-          printf "mod php 'vendor/justfiles/php/php.justfile'\n" >justfile
-          mise ls-remote php | grep -E '^8\.4\.[0-9]+$' | sort -t. -k3,3n | tail -n 1 >.php-version
-          test -s .php-version
-          echo "pin: $(cat .php-version)"
-          just php setup
-          just php check
-          just php version
+          PHP_PIN="$(mise ls-remote php | grep -E '^8\.4\.[0-9]+$' | sort -t. -k3,3n | tail -n 1)"
+          test -n "$PHP_PIN"
+          echo "pin: $PHP_PIN"
+          PHP_PIN="$PHP_PIN" ./test/integration/smoke.sh
+
+  macos-brew-setup:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # 8.5 is core's current php, served as an alias; 8.4 is a versioned formula.
+        pin: ["8.4", "8.5"]
+    name: macos-brew-setup (${{ matrix.pin }})
+    env:
+      PHP_BACKEND: brew
+      PHP_PIN: ${{ matrix.pin }}
+    steps:
+      - uses: actions/checkout@v5
+      - run: brew install just
+      - run: ./test/integration/smoke.sh
+
+  # Real installs from each distro's package manager and the repos it adds.
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [ubuntu, debian, fedora, arch, alpine]
+    name: linux (${{ matrix.service }})
+    steps:
+      - uses: actions/checkout@v5
+      - run: ./test/run.sh ${{ matrix.service }}
+        env:
+          COMPOSE_FILE: integration/compose.yaml

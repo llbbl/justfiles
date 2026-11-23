@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Fake apt-cache: sury appears once its sources file exists under $STUB_ROOT.
+set -euo pipefail
+echo "apt-cache $*" >>"$STUB_LOG"
+sury=""
+if [ -f "$STUB_ROOT/etc/apt/sources.list.d/php.list" ]; then sury=1; fi
+case "${1:-}" in
+  policy)
+    echo " 500 http://deb.debian.org/debian trixie/main arm64 Packages"
+    [ -z "$sury" ] || echo " 500 https://packages.sury.org/php trixie/main arm64 Packages" ;;
+  search)
+    if [ -n "$sury" ]; then cat "$FIXTURES/apt-cache-search-sury.txt"
+    else echo "php8.3-cli - command-line interpreter for the PHP scripting language"; fi ;;
+  *) echo "fake apt-cache: unhandled: $*" >&2; exit 2 ;;
+esac

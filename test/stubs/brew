@@ -1,8 +1,24 @@
 #!/usr/bin/env bash
+# Fake brew: core has php@8.1..8.6; taps added with `brew tap X` persist in $STUB_ROOT.
 set -euo pipefail
 echo "brew $*" >>"$STUB_LOG"
+prefix="${STUB_BREW_PREFIX:-/opt/homebrew}"
+taps="$STUB_ROOT/brew-taps"
 case "${1:-}" in
-  --prefix) echo "/opt/homebrew/opt/$2" ;;
+  --prefix) if [ $# -gt 1 ]; then echo "$prefix/opt/$2"; else echo "$prefix"; fi ;;
   install) ;;
+  search) printf 'php@8.%s\n' 1 2 3 4 5 6 ;;
+  info)
+    [ "$2" = --json=v2 ] && shift
+    disabled=false
+    case "$2" in
+      "${STUB_BREW_DISABLED:-none}") disabled=true ;;
+      php@8.[1-6]) ;;
+      php@*) grep -Fxq shivammathur/php "$taps" 2>/dev/null || { echo "Error: No available formula with the name \"$2\"." >&2; exit 1; } ;;
+    esac
+    echo "{\"formulae\":[{\"name\":\"$2\",\"disabled\":$disabled}]}" ;;
+  tap)
+    if [ $# -gt 1 ]; then mkdir -p "$STUB_ROOT"; echo "$2" >>"$taps"
+    else echo homebrew/core; cat "$taps" 2>/dev/null || true; fi ;;
   *) echo "fake brew: unhandled: $*" >&2; exit 2 ;;
 esac

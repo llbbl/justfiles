@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Fake dnf: Remi's packages are listed once remi-release is "installed".
+set -euo pipefail
+echo "dnf $*" >>"$STUB_LOG"
+case " $* " in
+  *" repoquery "*) [ ! -f "$STUB_ROOT/remi-release" ] || cat "$FIXTURES/dnf-repoquery-php.txt" ;;
+  *" install "*remi-release-*) touch "$STUB_ROOT/remi-release" ;;
+  *" install "*) ;;
+  *) echo "fake dnf: unhandled: $*" >&2; exit 2 ;;
+esac

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+echo "rpm $*" >>"$STUB_LOG"
+[ "$*" = "-q remi-release" ] || { echo "fake rpm: unhandled: $*" >&2; exit 2; }
+[ -f "$STUB_ROOT/remi-release" ] || { echo "package remi-release is not installed"; exit 1; }
+echo remi-release-43-2.fc43.remi.noarch

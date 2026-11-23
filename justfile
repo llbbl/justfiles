@@ -13,9 +13,13 @@ test *SERVICES:
 test-just VERSION *SERVICES:
     JUST_VERSION={{VERSION}} ./test/run.sh {{SERVICES}}
 
+# Real `just php setup` per distro, network on (e.g. `just test-integration fedora`). Slow.
+test-integration *SERVICES:
+    COMPOSE_FILE=integration/compose.yaml ./test/run.sh {{SERVICES}}
+
 # shellcheck every script and test.
 lint:
     docker run --rm -v "$PWD:/mnt:ro" -w /mnt {{shellcheck_image}} -x \
-      */*.sh */backends/*.sh test/stubs/* test/fixtures/fake-*
+      */*.sh */backends/*.sh test/integration/*.sh test/stubs/* test/fixtures/fake-*
     docker run --rm -v "$PWD:/mnt:ro" -w /mnt {{shellcheck_image}} -s bash test/helpers.bash
     docker run --rm -v "$PWD:/mnt:ro" -w /mnt {{shellcheck_image}} -s bats -S warning test/*/*.bats

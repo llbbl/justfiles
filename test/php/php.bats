@@ -1,13 +1,46 @@
 setup() {
   load ../helpers
   common_setup
+  # mise is the default only on macOS; Linux detection is covered below.
+  export STUB_UNAME=Darwin
   echo 8.5.7 >"$PROJECT_DIR/.php-version"
 }
 
-@test "backend: defaults to mise" {
+@test "backend: macOS prefers mise, then brew" {
   run php_sh backend
   [ "$status" -eq 0 ]
-  [ "$output" = "mise (first available of: mise)" ]
+  [ "$output" = "mise (first available of: mise brew)" ]
+}
+
+@test "backend: macOS without mise uses brew" {
+  PATH="$(isolated_path uname brew)" run php_sh backend
+  [ "$status" -eq 0 ]
+  [ "$output" = "brew (first available of: mise brew)" ]
+}
+
+@test "backend: Linux prefers brew over the distro's package manager" {
+  STUB_UNAME=Linux run php_sh backend
+  [ "$status" -eq 0 ]
+  [ "$output" = "brew (first available of: brew apt dnf pacman apk)" ]
+}
+
+@test "backend: Linux skips mise and falls through in order" {
+  STUB_UNAME=Linux PATH="$(isolated_path uname mise dnf pacman apk)" run php_sh backend
+  [ "$status" -eq 0 ]
+  [ "$output" = "dnf (first available of: brew apt dnf pacman apk)" ]
+}
+
+@test "backend: Linux with nothing usable says what it tried" {
+  STUB_UNAME=Linux PATH="$(isolated_path uname mise)" run php_sh backend
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"no supported backend found (tried: brew apt dnf pacman apk)"* ]]
+}
+
+@test "backend: PHP_BACKEND=mise is refused on Linux" {
+  STUB_UNAME=Linux PHP_BACKEND=mise run php_sh setup
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"PHP_BACKEND=mise, but mise is not available on this system"* ]] || false
+  run ! grep -q 'install' "$STUB_LOG"
 }
 
 @test "backend: PHP_BACKEND naming an unknown backend fails" {
@@ -173,14 +206,7 @@ setup() {
   ! grep -q 'mise install' "$STUB_LOG"
 }
 
-@test "setup: mise backend refuses Linux for now" {
-  run php_sh setup
-  [ "$status" -ne 0 ]
-  [[ "$output" == *"only knows macOS build deps"* ]]
-}
-
 @test "setup: macOS builds against openssl@3 and verifies the extension" {
-  export STUB_UNAME=Darwin
   run php_sh setup
   [ "$status" -eq 0 ]
   assert_log "brew install openssl@3 gd icu4c libzip oniguruma libxml2 libiconv"
@@ -190,14 +216,13 @@ setup() {
 }
 
 @test "setup: fails when the openssl extension is missing" {
-  export STUB_UNAME=Darwin STUB_PHP_MODULES='Core\nzip'
+  export STUB_PHP_MODULES='Core\nzip'
   run php_sh setup
   [ "$status" -ne 0 ]
   [[ "$output" == *"openssl extension MISSING"* ]]
 }
 
 @test "setup: stops on a pin mismatch before installing anything" {
-  export STUB_UNAME=Darwin
   printf '[tools]\nphp = "8.4.1"\n' >"$PROJECT_DIR/mise.toml"
   run php_sh setup
   [ "$status" -ne 0 ]

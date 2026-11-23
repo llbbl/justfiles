@@ -1,0 +1,12 @@
+Repository      : extra
+Name            : php
+Version         : 8.5.13-1
+Description     : A general-purpose scripting language that is especially suited to web development
+Provides        : php-interpreter=8.5  php-intl=8.5.13
+
+Repository      : extra
+Name            : php-legacy
+Version         : 8.3.37-1
+Description     : A general-purpose scripting language that is especially suited to web development
+Provides        : php-interpreter=8.3  php-legacy-intl=8.3.37
+

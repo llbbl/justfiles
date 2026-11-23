@@ -58,3 +58,47 @@ setup() {
   STUB_UNAME=FreeBSD run detect_os
   [ "$status" -ne 0 ]
 }
+
+@test "run_privileged runs the command directly as root" {
+  STUB_UID=0 run run_privileged echo hi
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(printf '+ echo hi\nhi')" ] || false
+  run ! grep -q sudo "$STUB_LOG"
+}
+
+@test "run_privileged goes through sudo when not root" {
+  STUB_UID=1000 run run_privileged echo hi
+  [ "$status" -eq 0 ]
+  [[ "$output" == *hi ]] || false
+  assert_log "sudo echo hi"
+}
+
+@test "run_privileged without root or sudo says so" {
+  STUB_UID=1000 PATH="$(isolated_path id)" run run_privileged echo hi
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"needs root to run: echo hi (run as root, or install sudo)"* ]]
+}
+
+@test "os_release_field strips either quote style" {
+  export OS_RELEASE="$FIXTURES/os-release-rocky"
+  [ "$(os_release_field ID)" = rocky ]
+  [ "$(os_release_field VERSION_ID)" = 9.6 ]
+  OS_RELEASE="$FIXTURES/os-release-fedora"
+  [ "$(os_release_field NAME)" = "Fedora Linux" ]
+  [ "$(os_release_field VERSION_CODENAME)" = "" ]
+  [ "$(os_release_field NOPE)" = "" ]
+}
+
+@test "os_release_field fails clearly without the file" {
+  OS_RELEASE="$BATS_TEST_TMPDIR/missing" run os_release_field ID
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"cannot read $BATS_TEST_TMPDIR/missing"* ]]
+}
+
+@test "run_privileged traces to stderr, so redirecting stdout keeps the trace" {
+  run --separate-stderr run_privileged echo hi
+  [ "$status" -eq 0 ]
+  [ "$output" = hi ]
+  # shellcheck disable=SC2154 # set by run --separate-stderr
+  [ "$stderr" = "+ echo hi" ]
+}

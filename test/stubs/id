@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Fake id: `id -u` is $STUB_UID (root by default); anything else goes to the real id.
+if [ "${1:-}" = -u ]; then echo "${STUB_UID:-0}"; exit 0; fi
+for d in /usr/bin/id /bin/id; do [ -x "$d" ] && exec "$d" "$@"; done
+exit 127

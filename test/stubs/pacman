@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Fake pacman. Installed packages are "name version" lines in $STUB_ROOT/pacman-local.
+set -euo pipefail
+echo "pacman $*" >>"$STUB_LOG"
+case "${1:-}" in
+  # Real pacman translates field labels; mimic a French locale unless LC_ALL=C.
+  -Si) if [ "${LC_ALL:-}" = C ]; then cat "$FIXTURES/pacman-si-php.txt"; else sed 's/^Name /Nom  /' "$FIXTURES/pacman-si-php.txt"; fi ;;
+  -S)
+    shift
+    for p; do
+      awk -v p="$p" '/^Name/ { n = $3 } /^Version/ && n == p { print n, $3 }' "$FIXTURES/pacman-si-php.txt" >>"$STUB_ROOT/pacman-local"
+    done ;;
+  -Q)
+    shift
+    rc=0
+    for p; do
+      grep "^$p " "$STUB_ROOT/pacman-local" 2>/dev/null || { echo "error: package '$p' was not found" >&2; rc=1; }
+    done
+    exit "$rc" ;;
+  *) echo "fake pacman: unhandled: $*" >&2; exit 2 ;;
+esac

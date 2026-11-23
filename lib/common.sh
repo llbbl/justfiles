@@ -3,6 +3,7 @@
 
 die() { printf '✗ %s\n' "$*" >&2; exit 1; }
 log() { printf '%s\n' "$*"; }
+warn() { printf '! %s\n' "$*" >&2; }
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || die "needs $1${2:+ ($2)}"
@@ -51,4 +52,24 @@ http_get() {
   else
     die "needs curl or wget"
   fi
+}
+
+# Runs CMD as root: directly when already root, else through sudo. Prints it
+# first, since every caller is changing the system.
+run_privileged() {
+  log "+ $*" >&2
+  if [ "$(id -u)" = 0 ]; then
+    "$@"
+  elif command -v sudo >/dev/null 2>&1; then
+    sudo "$@"
+  else
+    die "needs root to run: $* (run as root, or install sudo)"
+  fi
+}
+
+# Value of KEY in os-release (OS_RELEASE overrides the path), quotes removed.
+os_release_field() {
+  local f="${OS_RELEASE:-/etc/os-release}"
+  [ -f "$f" ] || die "cannot read $f to identify this Linux distribution"
+  awk -F= -v k="$1" '$1 == k { v = substr($0, length(k) + 2); gsub(/^["\047]|["\047]$/, "", v); print v; exit }' "$f"
 }

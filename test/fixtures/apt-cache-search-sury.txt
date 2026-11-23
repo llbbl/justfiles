@@ -1,0 +1,13 @@
+php5.6-cli - command-line interpreter for the PHP scripting language
+php7.0-cli - command-line interpreter for the PHP scripting language
+php7.1-cli - command-line interpreter for the PHP scripting language
+php7.2-cli - command-line interpreter for the PHP scripting language
+php7.3-cli - command-line interpreter for the PHP scripting language
+php7.4-cli - command-line interpreter for the PHP scripting language
+php8.0-cli - command-line interpreter for the PHP scripting language
+php8.1-cli - command-line interpreter for the PHP scripting language
+php8.2-cli - command-line interpreter for the PHP scripting language
+php8.3-cli - command-line interpreter for the PHP scripting language
+php8.4-cli - command-line interpreter for the PHP scripting language
+php8.5-cli - command-line interpreter for the PHP scripting language
+php8.6-cli - command-line interpreter for the PHP scripting language

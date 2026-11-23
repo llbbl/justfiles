@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Fake tee: writes FILE under $STUB_ROOT instead of the real filesystem, and logs it.
+set -euo pipefail
+echo "tee $*" >>"$STUB_LOG"
+for f; do :; done
+mkdir -p "$STUB_ROOT$(dirname "$f")"
+cat >"$STUB_ROOT$f"
+sed 's/^/tee< /' "$STUB_ROOT$f" >>"$STUB_LOG"
+cat "$STUB_ROOT$f"
