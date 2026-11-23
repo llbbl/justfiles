@@ -1,0 +1,8 @@
+php74-php-cli
+php80-php-cli
+php81-php-cli
+php82-php-cli
+php83-php-cli
+php84-php-cli
+php85-php-cli
+php86-php-cli

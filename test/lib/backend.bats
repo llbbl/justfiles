@@ -40,7 +40,7 @@ EOB
 @test "env var naming an unavailable backend fails" {
   X_BACKEND=no run backend_select "$MOD" X_BACKEND yes1
   [ "$status" -ne 0 ]
-  [[ "$output" == *"not installed"* ]]
+  [[ "$output" == *"X_BACKEND=no, but no is not available on this system"* ]]
 }
 
 @test "fails when nothing is available" {

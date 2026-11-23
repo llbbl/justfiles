@@ -1,0 +1,32 @@
+# Real `just php setup` per distro, network on. Each pins a minor its backend can
+# install; debian pins a patch to cover the minor-backend warning path.
+x-smoke: &smoke
+  volumes: ["../..:/repo:ro"]
+
+services:
+  ubuntu:
+    <<: *smoke
+    image: justfiles-integration-ubuntu
+    build: { context: ., args: { BASE_IMAGE: "ubuntu:24.04", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
+    environment: { PHP_PIN: "8.4" }
+  debian:
+    <<: *smoke
+    image: justfiles-integration-debian
+    build: { context: ., args: { BASE_IMAGE: "debian:13", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
+    environment: { PHP_PIN: "8.5.0" }
+  fedora:
+    <<: *smoke
+    image: justfiles-integration-fedora
+    build: { context: ., args: { BASE_IMAGE: "fedora:43", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
+    environment: { PHP_PIN: "8.5" }
+  arch:
+    <<: *smoke
+    image: justfiles-integration-arch
+    platform: linux/amd64 # archlinux publishes no arm64 image
+    build: { context: ., args: { BASE_IMAGE: "archlinux:base", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
+    environment: { PHP_PIN: "8.3" }
+  alpine:
+    <<: *smoke
+    image: justfiles-integration-alpine
+    build: { context: ., args: { BASE_IMAGE: "alpine:3.22", JUST_VERSION: "${JUST_VERSION:-1.46.0}" } }
+    environment: { PHP_PIN: "8.4" }

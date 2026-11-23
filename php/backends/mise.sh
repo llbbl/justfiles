@@ -1,7 +1,8 @@
 # shellcheck shell=bash
-# mise backend: builds PHP from source, exact patch pins.
+# mise backend: builds PHP from source, exact patch pins. macOS only: it only
+# knows the Homebrew build deps, so on Linux detection moves on to the distro's.
 
-backend_available() { command -v mise >/dev/null 2>&1; }
+backend_available() { [ "$(detect_os)" = macos ] && command -v mise >/dev/null 2>&1; }
 backend_granularity() { echo patch; }
 backend_versions() { mise ls-remote php | stable_versions; }
 
@@ -10,8 +11,6 @@ backend_versions() { mise ls-remote php | stable_versions; }
 # Homebrew libiconv are re-supplied (macOS's stock libiconv fails configure).
 backend_install() {
   local pin="$1" ssl iconv lib pc=""
-  [ "$(detect_os)" = macos ] ||
-    die "the mise backend builds PHP from source and only knows macOS build deps so far"
   require_cmd brew "https://brew.sh"
   brew install openssl@3 gd icu4c libzip oniguruma libxml2 libiconv
   ssl="$(brew --prefix openssl@3)"

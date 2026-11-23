@@ -3,6 +3,7 @@
 setup() {
   load ../helpers
   common_setup
+  export STUB_UNAME=Darwin
   mkdir -p "$PROJECT_DIR/vendor"
   ln -s "$REPO" "$PROJECT_DIR/vendor/justfiles"
   printf "mod php 'vendor/justfiles/php/php.justfile'\n" >"$PROJECT_DIR/justfile"

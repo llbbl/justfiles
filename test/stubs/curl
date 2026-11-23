@@ -5,5 +5,6 @@ echo "curl $*" >>"$STUB_LOG"
 for url; do :; done
 case "$url" in
   https://endoflife.date/api/php.json) cat "$FIXTURES/eol-php.json" ;;
+  https://packages.sury.org/debsuryorg-archive-keyring.deb) echo "fake keyring deb" ;;
   *) echo "fake curl: no fixture for $url" >&2; exit 22 ;;
 esac

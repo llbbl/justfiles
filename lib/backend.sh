@@ -31,7 +31,7 @@ backend_select() {
   name="${!var:-}"
   if [ -n "$name" ]; then
     _backend_load "$dir" "$name"
-    backend_available || die "$var=$name, but $name is not installed"
+    backend_available || die "$var=$name, but $name is not available on this system"
     BACKEND="$name"
     BACKEND_REASON="set by $var"
     return 0
