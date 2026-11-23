@@ -14,7 +14,7 @@ setup() {
 @test "just php lists the module's recipes, not the vendored repo's" {
   run just php
   [ "$status" -eq 0 ]
-  [[ "$output" == *"bump VERSION"* ]]
+  [[ "$output" == *"bump VERSION"* ]] || false
   [[ "$output" == *"floor"* ]]
 }
 

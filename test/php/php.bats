@@ -19,7 +19,7 @@ setup() {
 @test "latest: picks the newest patch numerically, ignoring RCs" {
   run php_sh latest
   [ "$status" -eq 0 ]
-  [[ "$output" == *"latest stable 8.5.x:     8.5.10"* ]]
+  [[ "$output" == *"latest stable 8.5.x:     8.5.10"* ]] || false
   [[ "$output" == *"newer 8.5.x stable: 8.5.10"* ]]
 }
 
@@ -79,14 +79,14 @@ setup() {
   printf '[tools]\nphp = "8.4.1"\n' >"$PROJECT_DIR/mise.toml"
   run php_sh bump
   [ "$status" -ne 0 ]
-  [[ "$output" == *"pin mismatch"* ]]
+  [[ "$output" == *"pin mismatch"* ]] || false
   [ "$(cat "$PROJECT_DIR/.php-version")" = 8.5.7 ]
 }
 
 @test "bump: refuses release candidates without listing versions" {
   run php_sh bump 8.5.11RC1
   [ "$status" -ne 0 ]
-  [[ "$output" == *"not a stable X.Y.Z version"* ]]
+  [[ "$output" == *"not a stable X.Y.Z version"* ]] || false
   run ! grep -q 'ls-remote' "$STUB_LOG"
   [ "$(cat "$PROJECT_DIR/.php-version")" = 8.5.7 ]
 }
@@ -120,14 +120,14 @@ setup() {
 @test "bump: refuses a multi-line version" {
   run php_sh bump "$(printf '8.5.10\nfoo')"
   [ "$status" -ne 0 ]
-  [[ "$output" == *"not a stable X.Y.Z version"* ]]
+  [[ "$output" == *"not a stable X.Y.Z version"* ]] || false
   [ "$(cat "$PROJECT_DIR/.php-version")" = 8.5.7 ]
 }
 
 @test "bump: reports a failed version listing instead of a bad version" {
   STUB_MISE_FAIL=ls-remote run php_sh bump
   [ "$status" -ne 0 ]
-  [[ "$output" == *"could not list php versions via mise"* ]]
+  [[ "$output" == *"could not list php versions via mise"* ]] || false
   [ "$(cat "$PROJECT_DIR/.php-version")" = 8.5.7 ]
 }
 
@@ -141,7 +141,7 @@ setup() {
 @test "floor: oldest branch still in active support" {
   run php_sh floor
   [ "$status" -eq 0 ]
-  [[ "$output" == *"oldest active-support 8.x:   8.4   (active support until 2026-12-31)"* ]]
+  [[ "$output" == *"oldest active-support 8.x:   8.4   (active support until 2026-12-31)"* ]] || false
   [[ "$output" == *"just php bump 8.4.15"* ]]
 }
 
@@ -169,7 +169,7 @@ setup() {
   mise_installed php 8.5.7
   run php_sh version
   [ "$status" -eq 0 ]
-  [[ "$output" == "PHP 8.5.7 (cli)"* ]]
+  [[ "$output" == "PHP 8.5.7 (cli)"* ]] || false
   ! grep -q 'mise install' "$STUB_LOG"
 }
 

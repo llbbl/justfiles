@@ -90,7 +90,7 @@ setup() {
   printf '[tools]\nphp = "8.4.1"\n' >mise.toml
   run pin_get php .php-version
   [ "$status" -ne 0 ]
-  [[ "$output" == *".php-version says php 8.5.7"* ]]
+  [[ "$output" == *".php-version says php 8.5.7"* ]] || false
   [[ "$output" == *"mise.toml says 8.4.1"* ]]
 }
 

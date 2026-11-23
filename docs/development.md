@@ -46,6 +46,9 @@ BSD userland (`sed`, `sort`, `awk` on macOS); that needs a macOS CI runner.
 - No `sed -i` (BSD and GNU disagree); use `rewrite_file`.
 - No `sort -V` (busybox); use `version_sort`.
 - `just lint` must pass.
+- In bats, end a `[[ ]]` that isn't a test's last line with `|| false`:
+  bash before 4.1 doesn't fail a test on a mid-test `[[ ]]`. Bare `!` has the
+  same problem; use `run !`.
 
 ## Minimum just
 
