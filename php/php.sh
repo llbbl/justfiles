@@ -95,10 +95,16 @@ cmd_latest() {
 }
 
 # bump [VERSION]: pin VERSION, or the newest patch in the current minor line.
+# An explicit VERSION repairs a pin mismatch by writing both files; without one
+# there is no way to know which file is right, so the mismatch still stops it.
 cmd_bump() {
   local target="${1:-}" pin="" versions=""
   use_backend
-  if pin_read "$PIN_FILE" >/dev/null; then pin="$(pin_get php "$PIN_FILE")"; fi
+  if [ -n "$target" ]; then
+    pin="$(pin_read "$PIN_FILE" || true)"
+  elif pin_read "$PIN_FILE" >/dev/null; then
+    pin="$(pin_get php "$PIN_FILE")"
+  fi
   if [ -z "$target" ]; then
     [ -n "$pin" ] || die "no $PIN_FILE yet: run  just php bump <version>"
     versions="$(list_versions)"
@@ -112,7 +118,7 @@ cmd_bump() {
   [ -n "$versions" ] || versions="$(list_versions)"
   grep -Fxq -- "$target" <<<"$versions" ||
     die "version $target is not available via $BACKEND"
-  if [ "$target" = "$pin" ]; then
+  if [ "$target" = "$pin" ] && { ! mise_pin php || [ "$MISE_PIN" = "$target" ]; }; then
     log "✓ already pinned to $pin"
     return 0
   fi

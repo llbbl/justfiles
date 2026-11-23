@@ -32,7 +32,8 @@ repo.
 If your `mise.toml` (or `.mise.toml`) also pins `php` under `[tools]`, the two
 must match exactly. On a mismatch every recipe stops and names both files, since
 one of them has to change. `just php bump` updates both, so it never creates a
-mismatch. `8.5` and `8.5.7` count as different: mise would resolve `8.5` to
+mismatch, and `just php bump <version>` repairs an existing one by writing that
+version to both. `8.5` and `8.5.7` count as different: mise would resolve `8.5` to
 whatever patch is newest.
 
 ## Recipes

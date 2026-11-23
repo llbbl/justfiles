@@ -50,6 +50,29 @@ setup() {
   grep -Fxq 'php = "8.4.15"' "$PROJECT_DIR/mise.toml"
 }
 
+@test "bump: an explicit version repairs a pin mismatch" {
+  printf '[tools]\nphp = "8.4.1"\n' >"$PROJECT_DIR/mise.toml"
+  run php_sh bump 8.5.10
+  [ "$status" -eq 0 ]
+  [ "$(cat "$PROJECT_DIR/.php-version")" = 8.5.10 ]
+  grep -Fxq 'php = "8.5.10"' "$PROJECT_DIR/mise.toml"
+}
+
+@test "bump: repairs mise.toml even when .php-version already has the version" {
+  printf '[tools]\nphp = "8.4.1"\n' >"$PROJECT_DIR/mise.toml"
+  run php_sh bump 8.5.7
+  [ "$status" -eq 0 ]
+  grep -Fxq 'php = "8.5.7"' "$PROJECT_DIR/mise.toml"
+}
+
+@test "bump: without a version still stops on a mismatch" {
+  printf '[tools]\nphp = "8.4.1"\n' >"$PROJECT_DIR/mise.toml"
+  run php_sh bump
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"pin mismatch"* ]]
+  [ "$(cat "$PROJECT_DIR/.php-version")" = 8.5.7 ]
+}
+
 @test "bump: refuses release candidates without listing versions" {
   run php_sh bump 8.5.11RC1
   [ "$status" -ne 0 ]
