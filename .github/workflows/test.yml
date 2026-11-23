@@ -49,3 +49,14 @@ jobs:
           export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
           bash --version | head -n 1
           bats -r test
+
+  # The one check branch protection requires, so the ruleset never lists matrix
+  # jobs by name. Fails if any job it waits on failed, was cancelled or skipped.
+  ci:
+    if: always()
+    needs: [lint, linux, macos]
+    runs-on: ubuntu-24.04
+    steps:
+      - run: '[ "$FAILED" = false ]'
+        env:
+          FAILED: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}
