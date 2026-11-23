@@ -132,8 +132,8 @@ LOG
 }
 
 @test "check: names the missing binary" {
-  rm "$STUB_BIN/python3.13"
-  run python_sh check
+  # Isolated PATH: a host python3.13 (macOS runners have one) would otherwise be found.
+  PATH="$(isolated_path uname apt-get)" run python_sh check
   [ "$status" -ne 0 ]
   [[ "$output" == *"python3.13 is not installed: run  just python setup"* ]]
 }
