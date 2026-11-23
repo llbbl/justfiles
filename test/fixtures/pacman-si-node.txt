@@ -1,0 +1,14 @@
+Repository      : extra
+Name            : nodejs
+Version         : 26.13.1-2
+Description     : Evented I/O for V8 javascript ("Current" release)
+
+Repository      : extra
+Name            : nodejs-lts-jod
+Version         : 22.23.5-1
+Description     : Evented I/O for V8 javascript (LTS release: Jod)
+
+Repository      : extra
+Name            : nodejs-lts-krypton
+Version         : 24.22.3-2
+Description     : Evented I/O for V8 javascript (LTS release: Krypton)

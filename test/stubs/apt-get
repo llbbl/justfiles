@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# Fake apt-get. STUB_APT_UPDATE_FAIL fails `update` once a deadsnakes sources file exists.
+# Fake apt-get. STUB_APT_UPDATE_FAIL fails `update` once a deadsnakes sources
+# file exists, or the nodesource one when it is set to nodesource.
 echo "apt-get $*" >>"$STUB_LOG"
-if [ "${1:-}" = update ] && [ -n "${STUB_APT_UPDATE_FAIL:-}" ] && [ -f "$STUB_ROOT/etc/apt/sources.list.d/deadsnakes.list" ]; then
-  echo "E: The repository 'deadsnakes' does not have a Release file." >&2
+list=deadsnakes
+[ "${STUB_APT_UPDATE_FAIL:-}" != nodesource ] || list=nodesource
+if [ "${1:-}" = update ] && [ -n "${STUB_APT_UPDATE_FAIL:-}" ] && [ -f "$STUB_ROOT/etc/apt/sources.list.d/$list.list" ]; then
+  echo "E: The repository '$list' does not have a Release file." >&2
   exit 100
 fi

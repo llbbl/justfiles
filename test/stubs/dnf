@@ -4,6 +4,7 @@ set -euo pipefail
 echo "dnf $*" >>"$STUB_LOG"
 case " $* " in
   *" repoquery "*"python3.[0-9]*"*) cat "$FIXTURES/dnf-repoquery-python.txt" ;;
+  *" repoquery "*" nodejs "*) cat "$FIXTURES/dnf-repoquery-node.txt" ;;
   *" repoquery "*" python3 "*) printf '3.9.25\n3.14.0\n3.14.10\n3.15.0~a1\n' ;;
   *" repoquery "*) [ ! -f "$STUB_ROOT/remi-release" ] || cat "$FIXTURES/dnf-repoquery-php.txt" ;;
   *" install "*remi-release-*) touch "$STUB_ROOT/remi-release" ;;

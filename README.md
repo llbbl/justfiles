@@ -27,8 +27,7 @@ just php bump     # pin it
 | -------------- | ------------------------------------------------------------ | -------------------------- |
 | [`php/`](php/) | PHP pinned in `.php-version`, checked against `mise.toml`, upgrade recipes; installs with mise, Homebrew, apt, dnf, pacman or apk | [docs/php.md](docs/php.md) |
 | [`python/`](python/) | CPython pinned in `.python-version`, checked against `mise.toml`, upgrade recipes; installs with mise, uv, Homebrew, apt, dnf, pacman or apk | [docs/python.md](docs/python.md) |
-
-Node.js is on the way.
+| [`node/`](node/) | Node.js pinned in `.nvmrc`, checked against `mise.toml`, upgrade recipes; installs with mise, nvm, fnm, Homebrew, apt (NodeSource), dnf, pacman or apk | [docs/node.md](docs/node.md) |
 
 ## Requirements
 

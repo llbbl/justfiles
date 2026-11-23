@@ -1,6 +1,8 @@
 # Real `just MODULE setup` per distro, network on. Each pins a minor its backend
-# can install; debian pins a php patch to cover the minor-backend warning path,
-# and python-ubuntu a minor that needs ppa:deadsnakes.
+# can install; debian pins a php patch and node-debian an exact node to cover
+# the coarse-backend warning, python-ubuntu a minor that needs ppa:deadsnakes,
+# node-fedora a side-by-side major (node-24, npm-24), and PIN2 a switch to
+# another major where packages conflict or the repo is rewritten.
 x-smoke: &smoke
   volumes: ["../..:/repo:ro"]
 
@@ -37,3 +39,8 @@ services:
   python-fedora: { <<: *fedora, environment: { MODULE: python, PIN: "3.12" } }
   python-arch: { <<: *arch, environment: { MODULE: python, PIN: "3.14" } }
   python-alpine: { <<: *alpine, environment: { MODULE: python, PIN: "3.12" } }
+  node-ubuntu: { <<: *ubuntu, environment: { MODULE: node, PIN: "24", PIN2: "22" } }
+  node-debian: { <<: *debian, environment: { MODULE: node, PIN: "22.0.0" } }
+  node-fedora: { <<: *fedora, environment: { MODULE: node, PIN: "24" } }
+  node-arch: { <<: *arch, environment: { MODULE: node, PIN: "26", PIN2: "22" } }
+  node-alpine: { <<: *alpine, environment: { MODULE: node, PIN: "23", PIN2: "22" } }

@@ -1,0 +1,8 @@
+nodejs 22.19.0
+nodejs 22.22.2
+nodejs-devel 22.22.2
+nodejs-npm 10.9.7
+nodejs20 20.20.2
+nodejs20-npm 10.8.2
+nodejs24 24.14.1
+nodejs24-npm 11.11.0
