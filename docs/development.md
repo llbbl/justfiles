@@ -86,16 +86,19 @@ request:
 - **ci**: passes only when all of the above pass. It's the single check the
   `main` ruleset requires, so changing the matrix never touches the ruleset.
 
-`.github/workflows/integration.yml` runs a real `just php setup` and `just python setup`,
-weekly and on demand, through `test/integration/smoke.sh` (a scratch consumer
-project; `MODULE` and `PIN` pick what it sets up):
+`.github/workflows/integration.yml` runs a real `just <module> setup` for php,
+python and node, weekly and on demand, through `test/integration/smoke.sh` (a
+scratch consumer project; `MODULE` and `PIN` pick what it sets up):
 
-- **macos-php-setup**: the mise backend on a fresh Mac. It builds PHP.
+- **macos-php-setup**: the mise backend on a fresh Mac. It builds PHP (up to
+  ~16 minutes), so it runs only on manual dispatch, not weekly.
 - **macos-brew-setup**: `PHP_BACKEND=brew` on a fresh Mac.
 - **macos-python-setup**: python with each of mise, uv and brew on a fresh Mac.
+- **macos-node-setup**: node with each of mise, nvm, fnm and brew on a fresh Mac.
 - **linux**: each `test/integration/compose.yaml` service, the same thing
   `just test-integration` runs locally: a stock distro image with network on,
-  one service per distro for php and one (`python-<distro>`) for python.
+  one service per distro for php and one each (`python-<distro>`,
+  `node-<distro>`) for python and node.
 
 Too slow for every push. To test a branch, run it against that branch:
 
