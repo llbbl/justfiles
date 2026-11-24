@@ -124,7 +124,9 @@ current one is an alias of `php`). Older minors come from the
 Adds [packages.sury.org](https://packages.sury.org/php/README.txt) (keyring
 package plus `/etc/apt/sources.list.d/php.list`) on Debian and Ubuntu, then
 installs `phpX.Y-*`. Ubuntu uses it too: `ppa:ondrej/php` is frozen and points
-there. `latest` before the first `setup` only sees the distro's own php.
+there. If sury has no release for your codename, `apt-get update` fails and
+`setup` removes `php.list` again. `latest` before the first `setup` only sees
+the distro's own php.
 
 ### dnf
 
