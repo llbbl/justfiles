@@ -87,6 +87,29 @@ latest_in_line() {
   { grep -E "^${line//./\\.}\." <<<"$1" || true; } | version_sort | tail -n 1
 }
 
+# eol_rows FIELD FILTER [MAJOR]: endoflife.date cycles whose FIELD date is still
+# ahead and that pass the jq FILTER, oldest first, as cycle<TAB>date<TAB>latest.
+eol_rows() {
+  local json
+  json="$(http_get "$EOL_URL")" || return 1
+  jq -r --arg today "$(date +%F)" --arg f "$1" --arg major "${3:-}" '
+    map(select((.[$f] | type == "string") and (.[$f] > $today)))
+    | map('"$2"')
+    | sort_by(.cycle | split(".") | map(tonumber))
+    | .[] | "\(.cycle)\t\(.[$f])\t\(.latest)"' <<<"$json"
+}
+
+# newest_lts VERSIONS: newest line in VERSIONS that is in LTS today (empty if
+# none); fails when endoflife.date can't be read.
+newest_lts() {
+  local rows
+  command -v jq >/dev/null 2>&1 || return 1
+  # shellcheck disable=SC2016 # $today is a jq variable
+  rows="$(eol_rows eol 'select((.lts | type == "string") and .lts <= $today)' 2>/dev/null)" || return 1
+  [ -n "$rows" ] || return 0
+  { cut -d. -f"1-$LINE_FIELDS" <<<"$1" | grep -Fx -f <(cut -f1 <<<"$rows") || true; } | version_sort | tail -n 1
+}
+
 cmd_backend() {
   use_backend
   log "$BACKEND ($BACKEND_REASON)"
@@ -137,7 +160,7 @@ cmd_version() {
 }
 
 cmd_latest() {
-  local pin line versions newest all
+  local pin line versions newest all lts=""
   pin="$(module_pin)"
   use_backend
   line="$(line_of "$pin")"
@@ -146,7 +169,26 @@ cmd_latest() {
   if tracks_line "$pin"; then
     [ -n "$all" ] || die "no $TOOL versions found via $BACKEND"
     all="$(line_of "$all")"
+    if [ "${LTS:-0}" = 1 ]; then
+      if ! lts="$(newest_lts "$versions")"; then
+        warn "couldn't read LTS ${RELEASE_LINE}s from endoflife.date (needs jq and network); comparing all ${RELEASE_LINE}s"
+      elif [ -z "$lts" ]; then
+        warn "$BACKEND has no $RELEASE_LINE in LTS; comparing all ${RELEASE_LINE}s"
+      fi
+    fi
     printf 'pinned (%s):  %s\n' "$PIN_FILE" "$pin"
+    if [ -n "$lts" ]; then
+      printf 'newest LTS via %s: %s\n' "$BACKEND" "$lts"
+      [ "$all" = "$lts" ] || printf 'newest via %s:     %s (not LTS)\n' "$BACKEND" "$all"
+      if [ "$line" = "$lts" ]; then
+        printf '\n✓ pin is the newest LTS %s %s has\n' "$RELEASE_LINE" "$BACKEND"
+      elif [ "$(printf '%s\n' "$line" "$lts" | version_sort | tail -n 1)" = "$line" ]; then
+        printf '\n✓ pin %s is newer than the newest LTS %s (%s)\n' "$line" "$RELEASE_LINE" "$lts"
+      else
+        printf '\n→ newer LTS %s: %s, run: just %s bump %s\n' "$RELEASE_LINE" "$lts" "$TOOL" "$lts"
+      fi
+      return 0
+    fi
     printf 'newest available via %s: %s\n' "$BACKEND" "$all"
     if [ "$line" = "$all" ]; then
       printf '\n✓ pin is the newest %s %s has\n' "$RELEASE_LINE" "$BACKEND"
@@ -220,7 +262,7 @@ cmd_bump() {
   log "next: just $TOOL setup"
 }
 
-# Oldest endoflife.date cycle in the pinned major (or, with FLOOR_LTS=1, any LTS
+# Oldest endoflife.date cycle in the pinned major (or, with LTS=1, any LTS
 # cycle) whose FLOOR_FIELD date is still ahead: support = in active support, eol = not yet end of life.
 cmd_floor() {
   local pin major row cycle patch kind none label ends scope filter
@@ -235,12 +277,9 @@ cmd_floor() {
   # shellcheck disable=SC2016 # $major is a jq variable
   scope="$major.x" filter='select(.cycle | startswith($major + "."))'
   # Node's cycles are bare majors, and its odd ones never get LTS (lts is false).
-  if [ "${FLOOR_LTS:-0}" = 1 ]; then scope=LTS filter='select(.lts | type == "string")'; fi
-  row="$(http_get "$EOL_URL" | jq -r --arg today "$(date +%F)" --arg major "$major" --arg f "$FLOOR_FIELD" '
-    map(select((.[$f] | type == "string") and (.[$f] > $today)))
-    | map('"$filter"')
-    | sort_by(.cycle | split(".") | map(tonumber))
-    | (.[0] // empty) | "\(.cycle)\t\(.[$f])\t\(.latest)"')"
+  if [ "${LTS:-0}" = 1 ]; then scope=LTS filter='select(.lts | type == "string")'; fi
+  row="$(eol_rows "$FLOOR_FIELD" "$filter" "$major")"
+  row="${row%%$'\n'*}"
   [ -n "$row" ] || die "could not find $none $scope branch"
   IFS=$'\t' read -r cycle ends patch <<<"$row"
   # Fixed width keeps the values aligned whichever wording FLOOR_FIELD picks.

@@ -41,8 +41,10 @@ A module's `<lang>.sh` sets these, sources `lib/commands.sh`, and calls `main "$
 - `LINE_PINS=1` (python, node): a bare line pin (`3.13`, `22`) is allowed on a
   patch backend and accepts any installed release of that line; `latest`
   compares lines for it.
-- `FLOOR_LTS=1` (node): `floor` picks the oldest LTS cycle instead of the
-  oldest cycle in the pin's major.
+- `LTS=1` (node): `floor` picks the oldest LTS cycle instead of the oldest
+  cycle in the pin's major, and when `latest` compares lines it recommends the
+  newest line that is in LTS today (per endoflife.date), falling back to all
+  lines with a warning when that can't be read.
 - `validate_pin PIN`: dies on a pin the module can't install (python: anything
   but CPython `X.Y`/`X.Y.Z`). `module_pin`, the one place commands read the pin,
   calls it.

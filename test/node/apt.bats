@@ -72,6 +72,7 @@ LOG
   run node_sh latest
   [ "$status" -eq 0 ]
   [[ "$output" == *"NodeSource isn't added yet"* ]] || false
+  [[ "$output" == *"apt has no major in LTS; comparing all majors"* ]] || false
   [[ "$output" == *"newest available via apt: 20"* ]]
 }
 
