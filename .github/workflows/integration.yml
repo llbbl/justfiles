@@ -15,8 +15,10 @@ defaults:
 
 jobs:
   # Real build on a fresh runner: proves the Homebrew libs and build tools
-  # `just php setup` relies on exist on a clean Mac. Slow, so not on every push.
+  # `just php setup` relies on exist on a clean Mac. A full PHP build takes up to
+  # ~16 minutes, so it runs only on manual dispatch.
   macos-php-setup:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
     timeout-minutes: 60
     env:
