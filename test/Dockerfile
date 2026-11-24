@@ -1,4 +1,4 @@
-# Test image: any supported base + bats + just. Tests mount the repo read-only.
+# Test image: any supported base + bats + just (+ git for the release script). Tests mount the repo read-only.
 ARG BASE_IMAGE=ubuntu:24.04
 FROM ${BASE_IMAGE}
 ARG JUST_VERSION
@@ -8,7 +8,7 @@ ARG BATS_VERSION=1.11.1
 # the left of `&&`, which once let a failed pacman install build "successfully".
 # pacman's sandbox needs seccomp, which amd64 emulation on arm64 hosts lacks.
 RUN set -e; \
-    pkgs="curl ca-certificates jq tar gzip"; \
+    pkgs="curl ca-certificates jq tar gzip git"; \
     command -v bash >/dev/null || pkgs="$pkgs bash"; \
     if command -v apt-get >/dev/null; then \
       apt-get update; apt-get install -y --no-install-recommends $pkgs; rm -rf /var/lib/apt/lists/*; \

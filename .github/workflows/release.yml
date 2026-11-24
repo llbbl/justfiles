@@ -1,0 +1,35 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+    # Only what consumers run; docs, test and CI changes ride along in the next release.
+    # GitHub doesn't apply path filters to tag pushes.
+    paths: ["lib/**", "php/**", "python/**", "node/**"]
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+# Main runs share one group so two quick merges can't claim the same patch; a main
+# run superseded while queued loses nothing (the next release lists its PRs). Each
+# tag gets its own group: GitHub cancels a pending run when another queues behind it.
+concurrency:
+  group: ${{ github.ref_type == 'tag' && github.ref || 'release' }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - run: ./scripts/release.sh
+        env:
+          GH_TOKEN: ${{ github.token }}
