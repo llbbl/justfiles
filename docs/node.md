@@ -62,7 +62,7 @@ version. To make it so:
 | `just node setup`     | install the pinned node, then check npm is installed next to it    |
 | `just node check`     | pin vs `mise.toml`, and installed version vs pin                   |
 | `just node version`   | print the active node version                                      |
-| `just node latest`    | latest release in your major, vs the pin (major pins and major backends: newest major) |
+| `just node latest`    | latest release in your major, vs the pin (major pins and major backends: newest LTS major) |
 | `just node bump`      | pin the latest release in your major (major pins and major backends: no-op) |
 | `just node bump 24`   | pin an explicit major or `X.Y.Z`                                   |
 | `just node floor`     | oldest LTS major not yet end of life                               |
@@ -106,6 +106,12 @@ On mise, nvm and fnm a major pin accepts any installed release of it: `check`
 passes on it, `latest` compares majors and `bump` leaves the pin alone
 (`bump 22.N.N` pins an exact version). `setup` installs the newest release of
 the major. An `X.Y.Z` pin is exact.
+
+When `latest` compares majors, it recommends the newest major the backend has
+that [endoflife.date](https://endoflife.date/nodejs) lists as LTS today. A
+newer major that isn't LTS yet, an odd one or a new even one still in Current,
+is shown as `(not LTS)` but never recommended. A pin newer than the newest LTS
+is left alone. Without `jq` or network, `latest` warns and compares all majors.
 
 ### mise
 
@@ -155,7 +161,7 @@ replaces the installed package. npm is installed with it.
 
 ## Staying current
 
-1. `just node latest` tells you whether a newer release (or major) exists.
+1. `just node latest` tells you whether a newer release (or LTS major) exists.
 2. `just node bump` updates the pin (and `mise.toml`, if it pins node).
 3. `just node setup` installs it.
 
@@ -167,4 +173,5 @@ maintain a library (`engines.node`).
 
 - macOS or Linux, with one of: mise, nvm, fnm, Homebrew, apt (Debian, Ubuntu),
   dnf (Fedora), pacman (Arch), apk (Alpine)
-- `jq`, only for `just node floor`
+- `jq`, for `just node floor`, and for `just node latest` to tell which majors
+  are LTS (without it, `latest` compares all majors)

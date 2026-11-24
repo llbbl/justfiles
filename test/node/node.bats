@@ -109,11 +109,36 @@ setup() {
   [[ "$output" == *"newer 22.x stable: 22.23.5, run: just node bump"* ]]
 }
 
-@test "latest: a bare major compares majors" {
+@test "latest: a bare major is compared with the newest LTS major" {
   echo 22 >"$PROJECT_DIR/.nvmrc"
   run node_sh latest
   [ "$status" -eq 0 ]
-  [[ "$output" == *"newest available via mise: 26"* ]] || false
+  [[ "$output" == *"newest LTS via mise: 26"* ]] || false
+  [[ "$output" != *"not LTS"* ]] || false
+  [[ "$output" == *"→ newer LTS major: 26, run: just node bump 26"* ]]
+}
+
+@test "latest: skips odd majors and an even one before its LTS date" {
+  echo 22 >"$PROJECT_DIR/.nvmrc"
+  STUB_TODAY=2026-06-01 run node_sh latest
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"newest LTS via mise: 24"* ]] || false
+  [[ "$output" == *"newest via mise:     26 (not LTS)"* ]] || false
+  [[ "$output" == *"→ newer LTS major: 24, run: just node bump 24"* ]]
+}
+
+@test "latest: a pin past the newest LTS major is left alone" {
+  echo 25 >"$PROJECT_DIR/.nvmrc"
+  STUB_TODAY=2026-06-01 run node_sh latest
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"✓ pin 25 is newer than the newest LTS major (24)"* ]]
+}
+
+@test "latest: without endoflife.date, warns and compares all majors" {
+  echo 22 >"$PROJECT_DIR/.nvmrc"
+  STUB_CURL_FAIL=1 run node_sh latest
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"couldn't read LTS majors from endoflife.date (needs jq and network); comparing all majors"* ]] || false
   [[ "$output" == *"→ newer major: 26, run: just node bump 26"* ]]
 }
 

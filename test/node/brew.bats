@@ -39,7 +39,7 @@ setup() {
 @test "latest and bump work in majors" {
   run node_sh latest
   [ "$status" -eq 0 ]
-  [[ "$output" == *"→ newer major: 26, run: just node bump 26"* ]] || false
+  [[ "$output" == *"→ newer LTS major: 26, run: just node bump 26"* ]] || false
   run node_sh bump
   [ "$status" -eq 0 ]
   [[ "$output" == *"✓ brew tracks the newest 24.x itself; nothing to bump"* ]] || false
@@ -47,4 +47,12 @@ setup() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"brew can't pin minors or patches; setup installs the newest 22.x"* ]] || false
   [ "$(cat "$PROJECT_DIR/.nvmrc")" = 22.1.0 ]
+}
+
+@test "latest: a newer major that isn't LTS yet is shown, not recommended" {
+  STUB_TODAY=2026-06-01 run node_sh latest
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"newest LTS via brew: 24"* ]] || false
+  [[ "$output" == *"newest via brew:     26 (not LTS)"* ]] || false
+  [[ "$output" == *"✓ pin is the newest LTS major brew has"* ]]
 }
