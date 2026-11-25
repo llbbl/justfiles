@@ -10,6 +10,7 @@ lib/              shared helpers: common.sh, pin.sh (pins + mise.toml), backend.
                   hooks), backends/<name>.sh
 test/             bats suites, fake commands (stubs/), fixtures/, Dockerfile, compose.yaml,
                   integration/ (real installs)
+scripts/          release.sh (run by the release workflow)
 ```
 
 Recipes stay one line: `bash {{php_sh}} <command>`. All logic lives in the
@@ -115,6 +116,40 @@ it from the Actions tab.
 Locally, a cached Arch integration image keeps the package database from when it
 was built, and weeks later its downloads fail. Rebuild it with
 `docker compose -f test/integration/compose.yaml build --no-cache arch`.
+
+## Releasing
+
+`.github/workflows/release.yml` runs `scripts/release.sh`. Nothing reads commit
+messages; version numbers only move as below.
+
+- **Patch, automatic.** A merge to `main` that changes `lib/`, `php/`,
+  `python/` or `node/` publishes the next patch after the highest `vX.Y.Z` tag,
+  on that commit. Docs-, test- or CI-only merges publish nothing; their PRs
+  appear in the next release's notes. Nothing is published before the first tag.
+  A merge whose PR is labeled `breaking` gets no patch either: tag a minor (or
+  major) on it. The hold covers every merge since the last release, so a later
+  unlabeled merge can't ship the breaking change as a patch either.
+- **Minor or major, by hand.** Tag `main` and push it:
+
+  ```sh
+  git fetch origin && git tag -a v0.2.0 -m "one-line summary" origin/main
+  git push origin v0.2.0
+  ```
+
+  The workflow publishes that tag's release, with the tag message at the top.
+  The list below it covers everything since the previous `X.Y.0`, not just
+  since the last patch. A lightweight tag (no `-a`) gets the list alone.
+  Tags the workflow creates start no other workflows, so nothing loops.
+
+Notes are GitHub's generated release notes: merged PR titles, grouped by label
+per `.github/release.yml` (`breaking`, `enhancement`, `bug`, `documentation`;
+`no-release-notes` hides a PR). Labels never pick a version number; `breaking`
+only holds back the automatic patch. Edit a published release with
+`gh release edit` or on GitHub.
+
+Tagging a minor on a commit that already got its patch (the usual case when
+`main`'s tip is a code merge) leaves both tags on it. That's harmless: they
+name the same code, and the minor's notes still cover the whole previous line.
 
 ## Shell rules
 

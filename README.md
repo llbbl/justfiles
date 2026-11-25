@@ -29,6 +29,20 @@ just php bump     # pin it
 | [`python/`](python/) | CPython pinned in `.python-version`, checked against `mise.toml`, upgrade recipes; installs with mise, uv, Homebrew, apt, dnf, pacman or apk | [docs/python.md](docs/python.md) |
 | [`node/`](node/) | Node.js pinned in `.nvmrc`, checked against `mise.toml`, upgrade recipes; installs with mise, nvm, fnm, Homebrew, apt (NodeSource), dnf, pacman or apk | [docs/node.md](docs/node.md) |
 
+## Versions
+
+Releases are semver tags (`v0.1.0`), listed with their notes on the
+[releases page](https://github.com/llbbl/justfiles/releases). Patch releases
+are fixes and safe to take. Before 1.0, a minor release may change recipes, pin
+rules or `*_BACKEND` variables; its notes say how.
+
+Pin the submodule to a release, and move it when you want an update:
+
+```sh
+cd vendor/justfiles && git fetch --tags && git checkout v0.1.0 && cd -
+git add vendor/justfiles && git commit -m "justfiles v0.1.0"
+```
+
 ## Requirements
 
 - macOS or Linux

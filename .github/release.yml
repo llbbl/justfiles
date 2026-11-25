@@ -1,0 +1,16 @@
+# Headings for GitHub's generated release notes, by PR label. Labels never pick
+# version numbers; `breaking` only holds back the automatic patch.
+changelog:
+  exclude:
+    labels: [no-release-notes]
+  categories:
+    - title: Breaking
+      labels: [breaking]
+    - title: New
+      labels: [enhancement]
+    - title: Fixes
+      labels: [bug]
+    - title: Docs
+      labels: [documentation]
+    - title: Other changes
+      labels: ["*"]

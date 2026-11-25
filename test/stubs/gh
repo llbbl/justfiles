@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Fake gh. `release create TAG` records its arguments, one per line, in
+# $STUB_ROOT/releases/TAG, which `release view TAG` then finds. `api` prints
+# the labels in $STUB_ROOT/labels/SHA as those of that commit's PR.
+echo "gh $*" >>"$STUB_LOG"
+mkdir -p "$STUB_ROOT/releases"
+case "${1:-} ${2:-}" in
+  "release view") [ -e "$STUB_ROOT/releases/$3" ] ;;
+  "release create") printf '%s\n' "$@" >"$STUB_ROOT/releases/$3" ;;
+  "api repos/{owner}/{repo}/commits/"*)
+    sha="${2#*/commits/}"
+    cat "$STUB_ROOT/labels/${sha%/pulls}" 2>/dev/null || true
+    ;;
+  *) echo "fake gh: unsupported: $*" >&2; exit 1 ;;
+esac
