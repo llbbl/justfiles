@@ -109,7 +109,9 @@ the newest each time a newer one is out. An `X.Y.Z` pin is exact.
 ### mise
 
 Installs python-build-standalone's precompiled CPython (`mise install
-python@<pin>`), on Linux as well as macOS. `version` and `check` run the
+python@<pin>`), on Linux as well as macOS. On musl (Alpine) mise builds from
+source instead, which needs a C compiler and Python's build libraries; use uv
+there, which has prebuilt musl CPython. `version` and `check` run the
 installed binary directly, so they never trigger a surprise install the way
 `mise exec` would.
 

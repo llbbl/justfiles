@@ -101,7 +101,11 @@ scratch consumer project; `MODULE` and `PIN` pick what it sets up):
 - **linux**: each `test/integration/compose.yaml` service, the same thing
   `just test-integration` runs locally: a stock distro image with network on,
   one service per distro for php and one each (`python-<distro>`,
-  `node-<distro>`) for python and node.
+  `node-<distro>`) for python and node. `python-<tool>` and `node-<tool>` add
+  one version manager (mise, uv, nvm, fnm) to Ubuntu from its official
+  installer and force that backend; `python-uv-alpine` does the same on Alpine.
+  Only uv gets an Alpine service: nodejs.org ships no musl builds, and mise
+  compiles python from source on musl.
 
 Too slow for every push. To test a branch, run it against that branch:
 
@@ -115,7 +119,9 @@ it from the Actions tab.
 
 Locally, a cached Arch integration image keeps the package database from when it
 was built, and weeks later its downloads fail. Rebuild it with
-`docker compose -f test/integration/compose.yaml build --no-cache arch`.
+`docker compose -f test/integration/compose.yaml build --no-cache arch`. The
+same goes for the version-manager images: a cached one keeps the mise, uv, nvm
+or fnm release it was built with, while CI always installs the latest.
 
 ## Releasing
 

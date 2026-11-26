@@ -44,3 +44,37 @@ services:
   node-fedora: { <<: *fedora, environment: { MODULE: node, PIN: "24" } }
   node-arch: { <<: *arch, environment: { MODULE: node, PIN: "26", PIN2: "22" } }
   node-alpine: { <<: *alpine, environment: { MODULE: node, PIN: "23", PIN2: "22" } }
+
+  # Version-manager backends, each image with that one tool installed. On Alpine
+  # only uv: nodejs.org ships no musl builds and mise compiles python there. mise
+  # calls the GitHub API, which rate limits shared IPs without a token.
+  python-mise:
+    <<: *smoke
+    image: justfiles-integration-ubuntu-mise
+    build: { context: ., args: { BASE_IMAGE: "ubuntu:24.04", JUST_VERSION: "${JUST_VERSION:-1.46.0}", TOOL: mise } }
+    environment: { MODULE: python, PIN: "3.13", PYTHON_BACKEND: mise, MISE_YES: "1", GITHUB_TOKEN: null }
+  python-uv:
+    <<: *smoke
+    image: justfiles-integration-ubuntu-uv
+    build: { context: ., args: { BASE_IMAGE: "ubuntu:24.04", JUST_VERSION: "${JUST_VERSION:-1.46.0}", TOOL: uv } }
+    environment: { MODULE: python, PIN: "3.13", PYTHON_BACKEND: uv }
+  node-mise:
+    <<: *smoke
+    image: justfiles-integration-ubuntu-mise
+    build: { context: ., args: { BASE_IMAGE: "ubuntu:24.04", JUST_VERSION: "${JUST_VERSION:-1.46.0}", TOOL: mise } }
+    environment: { MODULE: node, PIN: "24", PIN2: "22", NODE_BACKEND: mise, MISE_YES: "1", GITHUB_TOKEN: null }
+  node-nvm:
+    <<: *smoke
+    image: justfiles-integration-ubuntu-nvm
+    build: { context: ., args: { BASE_IMAGE: "ubuntu:24.04", JUST_VERSION: "${JUST_VERSION:-1.46.0}", TOOL: nvm } }
+    environment: { MODULE: node, PIN: "24", PIN2: "22", NODE_BACKEND: nvm }
+  node-fnm:
+    <<: *smoke
+    image: justfiles-integration-ubuntu-fnm
+    build: { context: ., args: { BASE_IMAGE: "ubuntu:24.04", JUST_VERSION: "${JUST_VERSION:-1.46.0}", TOOL: fnm } }
+    environment: { MODULE: node, PIN: "24", PIN2: "22", NODE_BACKEND: fnm }
+  python-uv-alpine:
+    <<: *smoke
+    image: justfiles-integration-alpine-uv
+    build: { context: ., args: { BASE_IMAGE: "alpine:3.22", JUST_VERSION: "${JUST_VERSION:-1.46.0}", TOOL: uv } }
+    environment: { MODULE: python, PIN: "3.13", PYTHON_BACKEND: uv }

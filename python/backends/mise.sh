@@ -1,5 +1,6 @@
 # shellcheck shell=bash
-# mise backend: precompiled CPython (python-build-standalone) on macOS and Linux.
+# mise backend: precompiled CPython (python-build-standalone) on macOS and glibc
+# Linux; on musl mise compiles from source.
 # Exact patch pins; an X.Y pin installs and runs that minor's newest patch.
 
 backend_available() { command -v mise >/dev/null 2>&1; }
