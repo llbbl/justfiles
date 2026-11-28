@@ -141,11 +141,11 @@ Debian's and Ubuntu's own node is end of life and lacks npm. `setup` adds
 `/etc/apt/keyrings/nodesource.asc` and `/etc/apt/sources.list.d/nodesource.list`
 for the pinned major, then installs `nodejs=N.*`. The key must have
 NodeSource's fingerprint (`6F71F525282841EEDAF851B42F59B5F99B1BE0B4`, checked
-with `gpg`) or nothing is added, and if NodeSource doesn't publish the major
-both files are removed again (the installed node stays; run `setup` with a
-published major to get updates back). The repo carries one major, so pinning another
-rewrites the list. `latest` before the first `setup` only sees the distro's own
-node.
+with `gpg`) or nothing is added. The repo carries one major, so pinning another
+rewrites the list. If NodeSource doesn't publish the major, `setup` stops before
+touching either file. If `apt-get update` still fails after the rewrite, the
+previous major's list and key are put back (on a first add, both are removed).
+`latest` before the first `setup` only sees the distro's own node.
 
 ### dnf
 

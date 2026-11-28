@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Fake apt-get. STUB_APT_UPDATE_FAIL=<name> fails `update` once
-# sources.list.d/<name>.list exists.
+# Fake apt-get. STUB_APT_UPDATE_FAIL=<text> fails `update` while any
+# sources.list.d/*.list contains <text> (a repo name, or node_22.x).
 echo "apt-get $*" >>"$STUB_LOG"
-list="${STUB_APT_UPDATE_FAIL:-}"
-if [ "${1:-}" = update ] && [ -n "$list" ] && [ -f "$STUB_ROOT/etc/apt/sources.list.d/$list.list" ]; then
-  echo "E: The repository '$list' does not have a Release file." >&2
+text="${STUB_APT_UPDATE_FAIL:-}"
+if [ "${1:-}" = update ] && [ -n "$text" ] && cat "$STUB_ROOT"/etc/apt/sources.list.d/*.list 2>/dev/null | grep -Fq -- "$text"; then
+  echo "E: The repository for '$text' does not have a Release file." >&2
   exit 100
 fi

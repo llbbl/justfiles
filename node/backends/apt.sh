@@ -32,8 +32,7 @@ backend_install() {
   if ! _apt_nodesource_major "$major"; then
     log "adding the NodeSource node_$major.x repository"
     apt_add_repo nodesource "$NODESOURCE/gpgkey/nodesource-repo.gpg.key" "$NODESOURCE_KEY" \
-      "$NODESOURCE/node_$major.x nodistro main" \
-      "apt-get update failed after adding NodeSource node_$major.x (it may not publish that major); removed it"
+      "$NODESOURCE/node_$major.x nodistro main" "$NODESOURCE/node_$major.x/dists/nodistro/Release"
   fi
   need_minor "$major"
   # The version glob keeps the distro's own node out; downgrades allow moving to an older major.

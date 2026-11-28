@@ -7,6 +7,11 @@ for d; do :; done
 case "${1:-}" in
   -d) mkdir -p "$STUB_ROOT$d" ;;
   -m)
+    # STUB_INSTALL_FAIL_FROM=<text> fails a copy whose SRC contains <text>.
+    if [ -n "${STUB_INSTALL_FAIL_FROM:-}" ] && [[ $3 == *"$STUB_INSTALL_FAIL_FROM"* ]]; then
+      echo "install: cannot create regular file '$d': Read-only file system" >&2
+      exit 1
+    fi
     mkdir -p "$STUB_ROOT$(dirname "$d")"
     cp "$3" "$STUB_ROOT$d"
     sed 's/^/install< /' "$STUB_ROOT$d" >>"$STUB_LOG" ;;

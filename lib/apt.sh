@@ -3,14 +3,21 @@
 
 apt_get() { run_privileged env DEBIAN_FRONTEND=noninteractive apt-get "$@"; }
 
-# apt_add_repo NAME KEY_URL FINGERPRINT SOURCE UPDATE_FAILED: adds `deb SOURCE`
+# apt_add_repo NAME KEY_URL FINGERPRINT SOURCE RELEASE_URL [HINT]: adds `deb SOURCE`
 # as sources.list.d/NAME.list, signed by the single key at KEY_URL, which must
-# have FINGERPRINT. If apt-get update then fails, removes it again and dies with UPDATE_FAILED.
+# have FINGERPRINT. Nothing changes unless RELEASE_URL (the suite's Release file)
+# exists. If apt-get update then fails, puts back the list and key it replaced,
+# or removes them on a first add, and dies; HINT is appended to either failure.
 apt_add_repo() {
-  local name="$1" url="$2" want="$3" source="$4" failed="$5" host key out fpr
+  local name="$1" url="$2" want="$3" source="$4" release="$5" hint="${6:+. $6}" host key out fpr saved f keep=""
+  local list="/etc/apt/sources.list.d/$name.list" asc="/etc/apt/keyrings/$name.asc"
+  local restored=() gone=()
   host="${url#*://}"
   host="${host%%/*}"
   apt_get install -y --no-install-recommends ca-certificates curl gnupg
+  # After that install: stock Debian and Ubuntu images have neither curl nor wget.
+  http_get "$release" >/dev/null ||
+    die "could not fetch $release: $name may not publish it, or the network is down; nothing was added$hint"
   key="$(mktemp)"
   http_get "$url" >"$key" || { rm -f "$key"; die "could not download the $name signing key from $host"; }
   # Captured first: awk's early exit would SIGPIPE gpg and trip pipefail.
@@ -25,14 +32,30 @@ apt_add_repo() {
     rm -f "$key"
     die "the downloaded $name key file holds more than one key; nothing was added"
   fi
+  # No sudo needed: apt-cache and _apt read these, so a working pair is world-readable.
+  # ponytail: a missing or unreadable file isn't saved, and a failed update removes it, as before.
+  saved="$(mktemp -d)"
+  for f in "$list" "$asc"; do cp "$f" "$saved/" 2>/dev/null || :; done
   run_privileged install -d -m 0755 /etc/apt/keyrings
   # install, not tee: apt reads keys as _apt, so the mode can't depend on root's umask.
-  run_privileged install -m 0644 "$key" "/etc/apt/keyrings/$name.asc"
+  run_privileged install -m 0644 "$key" "$asc"
   rm -f "$key"
-  printf 'deb [signed-by=/etc/apt/keyrings/%s.asc] %s\n' "$name" "$source" |
-    run_privileged tee "/etc/apt/sources.list.d/$name.list" >/dev/null
+  printf 'deb [signed-by=%s] %s\n' "$asc" "$source" | run_privileged tee "$list" >/dev/null
   if ! apt_get update; then
-    run_privileged rm -f "/etc/apt/sources.list.d/$name.list" "/etc/apt/keyrings/$name.asc"
-    die "$failed"
+    for f in "$list" "$asc"; do
+      if [ ! -e "$saved/${f##*/}" ]; then
+        gone+=("$f")
+      elif run_privileged install -m 0644 "$saved/${f##*/}" "$f"; then
+        restored+=("$f")
+      else
+        warn "could not restore $f; its previous copy is in $saved"
+        keep=1
+      fi
+    done
+    [ -n "$keep" ] || rm -rf "$saved"
+    [ ${#gone[@]} -eq 0 ] || { run_privileged rm -f "${gone[@]}"; warn "removed ${gone[*]}"; }
+    [ ${#restored[@]} -eq 0 ] || warn "restored the previous ${restored[*]}"
+    die "apt-get update failed after adding deb $source$hint"
   fi
+  rm -rf "$saved"
 }

@@ -17,6 +17,7 @@ deadsnakes_added() {
   expected="$(cat <<'LOG'
 apt-get update
 apt-get install -y --no-install-recommends ca-certificates curl gnupg
+curl -fsSL https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu/dists/noble/Release
 curl -fsSL https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xF23C5A6CF475977595C89F51BA6932366A755776
 gpg --show-keys --with-colons <key>
 install -d -m 0755 /etc/apt/keyrings
@@ -50,16 +51,24 @@ LOG
 }
 
 @test "setup: a failed key download says so and adds nothing" {
-  STUB_CURL_FAIL=1 run python_sh setup
+  STUB_CURL_MISSING="https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xF23C5A6CF475977595C89F51BA6932366A755776" run python_sh setup
   [ "$status" -ne 0 ]
   [[ "$output" == *"could not download the deadsnakes signing key from keyserver.ubuntu.com"* ]] || false
   run ! grep -q '^tee' "$STUB_LOG"
 }
 
-@test "setup: a PPA with no release for this Ubuntu is removed again" {
+@test "setup: a PPA with no release for this Ubuntu changes nothing" {
+  STUB_CURL_MISSING=https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu/dists/noble/Release run python_sh setup
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"could not fetch https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu/dists/noble/Release: deadsnakes may not publish it, or the network is down; nothing was added. uv installs any minor without sudo"* ]] || false
+  run ! grep -Eq '^(tee|install -m|rm) ' "$STUB_LOG"
+  run ! grep -q 'python3.13-venv' "$STUB_LOG"
+}
+
+@test "setup: a failed update after adding the PPA removes it again" {
   STUB_APT_UPDATE_FAIL=deadsnakes run python_sh setup
   [ "$status" -ne 0 ]
-  [[ "$output" == *"apt-get update failed after adding ppa:deadsnakes (it may have no release for ubuntu noble); removed it. uv installs any minor without sudo"* ]] || false
+  [[ "$output" == *"apt-get update failed after adding deb https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu noble main. uv installs any minor without sudo"* ]] || false
   [ ! -e "$STUB_ROOT/etc/apt/keyrings/deadsnakes.asc" ] || false
   [ ! -e "$STUB_ROOT/etc/apt/sources.list.d/deadsnakes.list" ] || false
   assert_log "rm -f /etc/apt/sources.list.d/deadsnakes.list /etc/apt/keyrings/deadsnakes.asc"
