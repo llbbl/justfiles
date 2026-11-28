@@ -7,8 +7,9 @@ setup() {
 }
 
 nodesource_added() {
-  mkdir -p "$STUB_ROOT/etc/apt/sources.list.d"
+  mkdir -p "$STUB_ROOT/etc/apt/sources.list.d" "$STUB_ROOT/etc/apt/keyrings"
   echo "deb https://deb.nodesource.com/node_$1.x nodistro main" >"$STUB_ROOT/etc/apt/sources.list.d/nodesource.list"
+  echo "old key" >"$STUB_ROOT/etc/apt/keyrings/nodesource.asc"
 }
 
 @test "setup: adds NodeSource for the pinned major, then installs nodejs from it" {
@@ -17,6 +18,7 @@ nodesource_added() {
   expected="$(cat <<'LOG'
 apt-get update
 apt-get install -y --no-install-recommends ca-certificates curl gnupg
+curl -fsSL https://deb.nodesource.com/node_22.x/dists/nodistro/Release
 curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key
 gpg --show-keys --with-colons <key>
 install -d -m 0755 /etc/apt/keyrings
@@ -54,12 +56,34 @@ LOG
   [ ! -e "$STUB_ROOT/etc/apt/sources.list.d/nodesource.list" ]
 }
 
-@test "setup: a major NodeSource doesn't publish is removed again" {
+@test "setup: a major NodeSource doesn't publish changes nothing" {
+  nodesource_added 20
+  STUB_CURL_MISSING=https://deb.nodesource.com/node_22.x/dists/nodistro/Release run node_sh setup
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"could not fetch https://deb.nodesource.com/node_22.x/dists/nodistro/Release: nodesource may not publish it, or the network is down; nothing was changed"* ]] || false
+  grep -Fxq "deb https://deb.nodesource.com/node_20.x nodistro main" "$STUB_ROOT/etc/apt/sources.list.d/nodesource.list"
+  grep -Fxq "old key" "$STUB_ROOT/etc/apt/keyrings/nodesource.asc"
+  run ! grep -Eq '^(tee|install -m|rm) ' "$STUB_LOG"
+}
+
+@test "setup: a failed update after a first add removes the list and key" {
   STUB_APT_UPDATE_FAIL=nodesource run node_sh setup
   [ "$status" -ne 0 ]
-  [[ "$output" == *"apt-get update failed after adding NodeSource node_22.x (it may not publish that major); removed it"* ]] || false
+  [[ "$output" == *"removed /etc/apt/sources.list.d/nodesource.list /etc/apt/keyrings/nodesource.asc"* ]] || false
+  [[ "$output" == *"apt-get update failed after adding deb https://deb.nodesource.com/node_22.x nodistro main"* ]] || false
   [ ! -e "$STUB_ROOT/etc/apt/sources.list.d/nodesource.list" ] || false
+  [ ! -e "$STUB_ROOT/etc/apt/keyrings/nodesource.asc" ] || false
   assert_log "rm -f /etc/apt/sources.list.d/nodesource.list /etc/apt/keyrings/nodesource.asc"
+}
+
+@test "setup: a failed update while switching majors restores the previous list and key" {
+  nodesource_added 20
+  STUB_APT_UPDATE_FAIL=node_22.x run node_sh setup
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"restored the previous /etc/apt/sources.list.d/nodesource.list /etc/apt/keyrings/nodesource.asc"* ]] || false
+  [ "$(cat "$STUB_ROOT/etc/apt/sources.list.d/nodesource.list")" = "deb https://deb.nodesource.com/node_20.x nodistro main" ] || false
+  [ "$(cat "$STUB_ROOT/etc/apt/keyrings/nodesource.asc")" = "old key" ] || false
+  run ! grep -q '^rm ' "$STUB_LOG"
 }
 
 @test "setup: refuses distributions other than Debian and Ubuntu" {

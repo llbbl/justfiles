@@ -38,8 +38,7 @@ _apt_add_deadsnakes() {
   log "adding ppa:deadsnakes for ubuntu $codename"
   # Non-LTS releases, and a new LTS before the PPA builds for it, have no Release file.
   apt_add_repo deadsnakes "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x$DEADSNAKES_KEY" \
-    "$DEADSNAKES_KEY" "$DEADSNAKES $codename main" \
-    "apt-get update failed after adding ppa:deadsnakes (it may have no release for ubuntu $codename); removed it. $UV_HINT"
+    "$DEADSNAKES_KEY" "$DEADSNAKES $codename main" "$DEADSNAKES/dists/$codename/Release" "$UV_HINT"
 }
 
 # pythonX.Y-venv carries ensurepip, without which `python -m venv` fails.

@@ -133,8 +133,9 @@ out). On Ubuntu, a minor the archive lacks adds
 (`/etc/apt/keyrings/deadsnakes.asc` and `/etc/apt/sources.list.d/deadsnakes.list`)
 first. The PPA's key must have Launchpad's published fingerprint
 (`F23C5A6CF475977595C89F51BA6932366A755776`, checked with `gpg`) or nothing is
-added, and if the PPA has no release for your Ubuntu (non-LTS releases, a new
-LTS before it's built) both files are removed again. `latest` before the
+added. If the PPA has no release for your Ubuntu (non-LTS releases, a new LTS
+before it's built), `setup` stops before writing either file, and if
+`apt-get update` still fails afterwards both are removed again. `latest` before the
 first `setup` only sees Ubuntu's own Python. Debian has only its own minor.
 
 ### dnf
