@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # A consumer project in a temp dir, with this repo vendored by symlink, runs a
-# real `just MODULE setup` for PIN, then for PIN2 if set (switching versions).
+# real `just MODULE setup` for PIN, then for PIN2 if set (switching versions);
+# SETUP=0 skips installing.
 # Used by the integration containers and CI.
 set -euo pipefail
 repo="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -16,6 +17,12 @@ pin_file=".$module-version"
 [ "$module" != node ] || pin_file=.nvmrc
 echo "$pin" >"$pin_file"
 just "$module" backend
+if [ "${SETUP:-1}" = 0 ]; then
+  just "$module" latest
+  just "$module" bump
+  just "$module" latest | grep -F '✓ pin is the latest'
+  exit 0
+fi
 just "$module" setup
 just "$module" check
 if [ -n "${PIN2:-}" ]; then
