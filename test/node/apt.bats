@@ -60,7 +60,7 @@ LOG
   nodesource_added 20
   STUB_CURL_MISSING=https://deb.nodesource.com/node_22.x/dists/nodistro/Release run node_sh setup
   [ "$status" -ne 0 ]
-  [[ "$output" == *"could not fetch https://deb.nodesource.com/node_22.x/dists/nodistro/Release: nodesource may not publish it, or the network is down; nothing was changed"* ]] || false
+  [[ "$output" == *"could not fetch https://deb.nodesource.com/node_22.x/dists/nodistro/Release: nodesource may not publish it, or the network is down; nothing was added"* ]] || false
   grep -Fxq "deb https://deb.nodesource.com/node_20.x nodistro main" "$STUB_ROOT/etc/apt/sources.list.d/nodesource.list"
   grep -Fxq "old key" "$STUB_ROOT/etc/apt/keyrings/nodesource.asc"
   run ! grep -Eq '^(tee|install -m|rm) ' "$STUB_LOG"
@@ -84,6 +84,15 @@ LOG
   [ "$(cat "$STUB_ROOT/etc/apt/sources.list.d/nodesource.list")" = "deb https://deb.nodesource.com/node_20.x nodistro main" ] || false
   [ "$(cat "$STUB_ROOT/etc/apt/keyrings/nodesource.asc")" = "old key" ] || false
   run ! grep -q '^rm ' "$STUB_LOG"
+}
+
+@test "setup: a restore that fails says so and keeps the saved copy" {
+  nodesource_added 20
+  STUB_APT_UPDATE_FAIL=node_22.x STUB_INSTALL_FAIL_FROM=/nodesource.asc run node_sh setup
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"restored the previous /etc/apt/sources.list.d/nodesource.list"* ]] || false
+  [[ "$output" =~ could\ not\ restore\ /etc/apt/keyrings/nodesource.asc\;\ its\ previous\ copy\ is\ in\ ([^[:space:]]+) ]] || false
+  [ "$(cat "${BASH_REMATCH[1]}/nodesource.asc")" = "old key" ] || false
 }
 
 @test "setup: refuses distributions other than Debian and Ubuntu" {

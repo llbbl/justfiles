@@ -60,7 +60,7 @@ LOG
 @test "setup: a PPA with no release for this Ubuntu changes nothing" {
   STUB_CURL_MISSING=https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu/dists/noble/Release run python_sh setup
   [ "$status" -ne 0 ]
-  [[ "$output" == *"could not fetch https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu/dists/noble/Release: deadsnakes may not publish it, or the network is down; nothing was changed. uv installs any minor without sudo"* ]] || false
+  [[ "$output" == *"could not fetch https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu/dists/noble/Release: deadsnakes may not publish it, or the network is down; nothing was added. uv installs any minor without sudo"* ]] || false
   run ! grep -Eq '^(tee|install -m|rm) ' "$STUB_LOG"
   run ! grep -q 'python3.13-venv' "$STUB_LOG"
 }

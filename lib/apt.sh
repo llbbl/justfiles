@@ -9,7 +9,7 @@ apt_get() { run_privileged env DEBIAN_FRONTEND=noninteractive apt-get "$@"; }
 # exists. If apt-get update then fails, puts back the list and key it replaced,
 # or removes them on a first add, and dies; HINT is appended to either failure.
 apt_add_repo() {
-  local name="$1" url="$2" want="$3" source="$4" release="$5" hint="${6:+. $6}" host key out fpr saved f
+  local name="$1" url="$2" want="$3" source="$4" release="$5" hint="${6:+. $6}" host key out fpr saved f keep=""
   local list="/etc/apt/sources.list.d/$name.list" asc="/etc/apt/keyrings/$name.asc"
   local restored=() gone=()
   host="${url#*://}"
@@ -17,7 +17,7 @@ apt_add_repo() {
   apt_get install -y --no-install-recommends ca-certificates curl gnupg
   # After that install: stock Debian and Ubuntu images have neither curl nor wget.
   http_get "$release" >/dev/null ||
-    die "could not fetch $release: $name may not publish it, or the network is down; nothing was changed$hint"
+    die "could not fetch $release: $name may not publish it, or the network is down; nothing was added$hint"
   key="$(mktemp)"
   http_get "$url" >"$key" || { rm -f "$key"; die "could not download the $name signing key from $host"; }
   # Captured first: awk's early exit would SIGPIPE gpg and trip pipefail.
@@ -43,14 +43,16 @@ apt_add_repo() {
   printf 'deb [signed-by=%s] %s\n' "$asc" "$source" | run_privileged tee "$list" >/dev/null
   if ! apt_get update; then
     for f in "$list" "$asc"; do
-      if [ -e "$saved/${f##*/}" ]; then
-        run_privileged install -m 0644 "$saved/${f##*/}" "$f"
+      if [ ! -e "$saved/${f##*/}" ]; then
+        gone+=("$f")
+      elif run_privileged install -m 0644 "$saved/${f##*/}" "$f"; then
         restored+=("$f")
       else
-        gone+=("$f")
+        warn "could not restore $f; its previous copy is in $saved"
+        keep=1
       fi
     done
-    rm -rf "$saved"
+    [ -n "$keep" ] || rm -rf "$saved"
     [ ${#gone[@]} -eq 0 ] || { run_privileged rm -f "${gone[@]}"; warn "removed ${gone[*]}"; }
     [ ${#restored[@]} -eq 0 ] || warn "restored the previous ${restored[*]}"
     die "apt-get update failed after adding deb $source$hint"
