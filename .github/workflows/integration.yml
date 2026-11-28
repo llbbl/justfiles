@@ -14,9 +14,9 @@ defaults:
     shell: bash
 
 jobs:
-  # Real build on a fresh runner: proves the Homebrew libs and build tools
-  # `just php setup` relies on exist on a clean Mac. A full PHP build takes up to
-  # ~16 minutes, so it runs only on manual dispatch.
+  # Real build on a fresh runner: proves PHP still configures and builds against
+  # the Homebrew libs. It takes up to ~16 minutes, so it runs only on manual
+  # dispatch; macos-php-mise-check covers the rest weekly.
   macos-php-setup:
     if: github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
@@ -35,6 +35,28 @@ jobs:
           test -n "$PHP_PIN"
           echo "pin: $PHP_PIN"
           PIN="$PHP_PIN" ./test/integration/smoke.sh
+
+  # The mise php path minus the compile, short enough for the weekly run.
+  macos-php-mise-check:
+    runs-on: macos-latest
+    timeout-minutes: 10
+    env:
+      MISE_YES: "1"
+      GITHUB_TOKEN: ${{ github.token }}
+      PHP_BACKEND: mise
+      PIN: "8.4.1"
+      SETUP: "0"
+    steps:
+      - uses: actions/checkout@v5
+      - run: brew install just mise
+      # The backend's own brew install and brew --prefix calls, so the list can't drift.
+      - name: Homebrew deps, as the mise backend installs them
+        run: |
+          . ./lib/common.sh
+          . ./php/backends/mise.sh
+          mise() { echo "skipped: mise $*"; }
+          backend_install "$PIN"
+      - run: ./test/integration/smoke.sh
 
   macos-brew-setup:
     runs-on: macos-latest

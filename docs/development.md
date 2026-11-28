@@ -94,7 +94,13 @@ python and node, weekly and on demand, through `test/integration/smoke.sh` (a
 scratch consumer project; `MODULE` and `PIN` pick what it sets up):
 
 - **macos-php-setup**: the mise backend on a fresh Mac. It builds PHP (up to
-  ~16 minutes), so it runs only on manual dispatch, not weekly.
+  ~16 minutes), so it runs only on manual dispatch, not weekly. Run it when a
+  Homebrew lib PHP builds against changes (a new `icu4c`, say).
+- **macos-php-mise-check**: the same mise path without the compile, weekly. It
+  runs the backend's own `brew install` and `brew --prefix` steps with `mise`
+  stubbed out, then `just php backend`, `latest` and `bump` (`SETUP=0` in
+  `smoke.sh`). Catches renamed or removed formulae and breakage in mise's php
+  plugin or version list; not a lib PHP no longer builds against.
 - **macos-brew-setup**: `PHP_BACKEND=brew` on a fresh Mac.
 - **macos-python-setup**: python with each of mise, uv and brew on a fresh Mac.
 - **macos-node-setup**: node with each of mise, nvm, fnm and brew on a fresh Mac.
