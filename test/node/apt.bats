@@ -93,6 +93,8 @@ LOG
   [[ "$output" == *"restored the previous /etc/apt/sources.list.d/nodesource.list"* ]] || false
   [[ "$output" =~ could\ not\ restore\ /etc/apt/keyrings/nodesource.asc\;\ its\ previous\ copy\ is\ in\ ([^[:space:]]+) ]] || false
   [ "$(cat "${BASH_REMATCH[1]}/nodesource.asc")" = "old key" ] || false
+  rm -rf "${BASH_REMATCH[1]}"
+  [[ "$output" == *"apt-get update failed after adding deb https://deb.nodesource.com/node_22.x nodistro main"* ]] || false
 }
 
 @test "setup: refuses distributions other than Debian and Ubuntu" {
